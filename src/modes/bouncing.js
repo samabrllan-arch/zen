@@ -8,7 +8,10 @@ export class BouncingMode {
     
     this.balls = [];
     this.isActive = false;
-    this.initialSpeed = 5;
+    
+    this.useGravity = true;
+    this.useCollision = false;
+    this.gravity = 0.2;
     
     this.boundaryRadius = 0;
     this.center = { x: 0, y: 0 };
@@ -16,13 +19,18 @@ export class BouncingMode {
   
   start() {
     this.isActive = true;
-    this.balls = [];
+    if (this.balls.length === 0) {
+      this.addBall();
+    }
     this.updateBounds();
   }
   
   stop() {
     this.isActive = false;
   }
+
+  setGravity(val) { this.useGravity = val; }
+  setCollision(val) { this.useCollision = val; }
   
   updateBounds() {
     this.center = { x: this.canvas.width / 2, y: this.canvas.height / 2 };
@@ -31,12 +39,13 @@ export class BouncingMode {
   
   addBall() {
     const angle = Math.random() * Math.PI * 2;
+    const speed = 5;
     this.balls.push({
       x: this.center.x,
       y: this.center.y,
-      vx: Math.cos(angle) * this.initialSpeed,
-      vy: Math.sin(angle) * this.initialSpeed,
-      radius: 8 + Math.random() * 10,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius: 10 + Math.random() * 8,
       mass: 1,
       color: `hsl(${Math.random() * 360}, 80%, 70%)`
     });
@@ -46,16 +55,18 @@ export class BouncingMode {
     this.balls = [];
   }
   
-  setSpeed(speed) {
-    this.initialSpeed = speed;
-  }
-  
-  update() {
+  update(dt, time) {
     if (!this.isActive) return;
     this.updateBounds();
     
     for (let i = 0; i < this.balls.length; i++) {
       const b = this.balls[i];
+      
+      // Apply gravity
+      if (this.useGravity) {
+        b.vy += this.gravity;
+      }
+      
       b.x += b.vx;
       b.y += b.vy;
       
@@ -66,7 +77,7 @@ export class BouncingMode {
         const nx = (b.x - this.center.x) / distToCenter;
         const ny = (b.y - this.center.y) / distToCenter;
         
-        // Reflect velocity
+        // Reflect velocity (perfect elasticity)
         const dot = b.vx * nx + b.vy * ny;
         b.vx = b.vx - 2 * dot * nx;
         b.vy = b.vy - 2 * dot * ny;
@@ -78,10 +89,12 @@ export class BouncingMode {
       }
       
       // Ball to ball collision
-      for (let j = i + 1; j < this.balls.length; j++) {
-        const b2 = this.balls[j];
-        if (circleCollision(b, b2)) {
-          resolveCollision(b, b2);
+      if (this.useCollision) {
+        for (let j = i + 1; j < this.balls.length; j++) {
+          const b2 = this.balls[j];
+          if (circleCollision(b, b2)) {
+            resolveCollision(b, b2);
+          }
         }
       }
     }
