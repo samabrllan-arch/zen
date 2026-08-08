@@ -1,172 +1,261 @@
 <!doctype html>
 <html lang="en" data-theme="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="./favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#08080f" />
-    <title>Zen Balls</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/zen/assets/index-B32clN4e.js"></script>
-    <link rel="stylesheet" crossorigin href="/zen/assets/index-BACO_yxJ.css">
-  <link rel="manifest" href="/zen/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/zen/registerSW.js"></script></head>
-  <body>
-    <div id="app">
 
-      <!-- ═══ CANVAS ═══ -->
-      <div id="game-container">
-        <canvas id="gameCanvas"></canvas>
-        <div class="vignette"></div>
-        <div class="hud">
-          <span class="hud-badge" id="ball-counter">0 balls</span>
-        </div>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="./favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a0d" />
+  <title>Zen Balls</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <script type="module" crossorigin src="/zen/assets/index-CM4JXLqa.js"></script>
+  <link rel="stylesheet" crossorigin href="/zen/assets/index-D7sZbCXj.css">
+<link rel="manifest" href="/zen/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/zen/registerSW.js"></script></head>
 
-      <!-- ═══ UI PANEL ═══ -->
-      <div id="ui-container">
+<body>
+  <div id="app">
 
-        <!-- Tab Bar -->
-        <nav class="tab-bar">
-          <button class="tab active" data-tab="tab-controls">
-            <span class="tab-icon">⚙</span><span class="tab-label">Controls</span>
-          </button>
-          <button class="tab" data-tab="tab-style">
-            <span class="tab-icon">🎨</span><span class="tab-label">Style</span>
-          </button>
-          <button class="tab" data-tab="tab-random">
-            <span class="tab-icon">🎲</span><span class="tab-label">Random</span>
-          </button>
-        </nav>
+    <!-- ═══ AMBIENT BACKDROP ═══ -->
+    <div class="aura" aria-hidden="true">
+      <span class="aura-blob aura-ember"></span>
+      <span class="aura-blob aura-jade"></span>
+    </div>
 
-        <!-- ─── TAB: Controls ─── -->
-        <div id="tab-controls" class="tab-panel active">
-
-          <div class="ctrl-row">
-            <button id="btn-add" class="btn-primary">+ Add Ball</button>
-            <button id="btn-clear" class="btn-ghost">Clear All</button>
-          </div>
-
-          <div class="ctrl-group">
-            <div class="ctrl-toggle-row">
-              <span class="ctrl-label">Gravity</span>
-              <label class="switch"><input type="checkbox" id="opt-gravity" checked><span class="track"><span class="thumb"></span></span></label>
-            </div>
-            <div class="slider-row" id="gravity-slider-row">
-              <input type="range" id="opt-gravity-val" min="0" max="100" value="20" class="range">
-              <span class="range-val" id="gravity-val-label">0.20</span>
-            </div>
-          </div>
-
-          <div class="ctrl-group">
-            <div class="ctrl-toggle-row">
-              <span class="ctrl-label">Ball Collisions</span>
-              <label class="switch"><input type="checkbox" id="opt-collision"><span class="track"><span class="thumb"></span></span></label>
-            </div>
-          </div>
-
-          <div class="ctrl-group">
-            <div class="ctrl-toggle-row">
-              <span class="ctrl-label">Disappear on Bounce</span>
-              <label class="switch"><input type="checkbox" id="opt-disappear"><span class="track"><span class="thumb"></span></span></label>
-            </div>
-            <div class="slider-row hidden" id="bounces-row">
-              <span class="ctrl-label-sm">Max Bounces</span>
-              <input type="range" id="opt-bounces" min="1" max="50" value="5" class="range">
-              <span class="range-val" id="bounces-label">5</span>
-            </div>
-          </div>
-
-          <div class="ctrl-group">
-            <span class="ctrl-label">Initial Speed</span>
-            <div class="slider-row">
-              <input type="range" id="opt-speed" min="1" max="20" value="5" class="range">
-              <span class="range-val" id="speed-label">5</span>
-            </div>
-          </div>
-
-          <div class="ctrl-group">
-            <span class="ctrl-label">Ball Size</span>
-            <div class="slider-row dual">
-              <span class="ctrl-label-sm">Min</span>
-              <input type="range" id="opt-size-min" min="4" max="30" value="8" class="range">
-              <span class="range-val" id="size-min-label">8</span>
-            </div>
-            <div class="slider-row dual">
-              <span class="ctrl-label-sm">Max</span>
-              <input type="range" id="opt-size-max" min="10" max="60" value="18" class="range">
-              <span class="range-val" id="size-max-label">18</span>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- ─── TAB: Style ─── -->
-        <div id="tab-style" class="tab-panel">
-
-          <div class="ctrl-group">
-            <div class="ctrl-toggle-row">
-              <span class="ctrl-label">Dark Mode</span>
-              <label class="switch"><input type="checkbox" id="opt-darkmode" checked><span class="track"><span class="thumb"></span></span></label>
-            </div>
-          </div>
-
-          <div class="ctrl-group">
-            <span class="ctrl-label">Color Palette</span>
-            <div class="palette-grid">
-              <button class="palette-btn active" data-palette="neon">Neon</button>
-              <button class="palette-btn" data-palette="pastel">Pastel</button>
-              <button class="palette-btn" data-palette="mono">Mono</button>
-              <button class="palette-btn" data-palette="rainbow">Rainbow</button>
-              <button class="palette-btn" data-palette="fire">Fire</button>
-              <button class="palette-btn" data-palette="ocean">Ocean</button>
-            </div>
-          </div>
-
-          <div class="ctrl-group">
-            <div class="ctrl-toggle-row">
-              <span class="ctrl-label">Show Trail</span>
-              <label class="switch"><input type="checkbox" id="opt-trail"><span class="track"><span class="thumb"></span></span></label>
-            </div>
-          </div>
-
-          <div class="ctrl-group">
-            <span class="ctrl-label">Glow Intensity</span>
-            <div class="slider-row">
-              <input type="range" id="opt-glow" min="0" max="30" value="12" class="range">
-              <span class="range-val" id="glow-label">12</span>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- ─── TAB: Random ─── -->
-        <div id="tab-random" class="tab-panel">
-
-          <div class="random-hero">
-            <div class="random-icon">🎲</div>
-            <h2 class="random-title">Random Mode</h2>
-            <p class="random-desc">Sit back and watch. Balls spawn automatically and settings change on their own.</p>
-            <label class="big-switch">
-              <input type="checkbox" id="opt-random">
-              <span class="big-track"><span class="big-thumb"></span></span>
-              <span class="big-label" id="random-status">OFF</span>
-            </label>
-          </div>
-
-          <div class="ctrl-group">
-            <span class="ctrl-label">Change Speed</span>
-            <div class="slider-row">
-              <span class="ctrl-label-sm">Slow</span>
-              <input type="range" id="opt-random-speed" min="1" max="10" value="5" class="range">
-              <span class="ctrl-label-sm">Fast</span>
-            </div>
-          </div>
-
-        </div>
-
+    <!-- ═══ CANVAS ═══ -->
+    <div id="game-container">
+      <canvas id="gameCanvas"></canvas>
+      <div class="grain" aria-hidden="true"></div>
+      <div class="vignette"></div>
+      <div class="brand-mark" aria-hidden="true"><span class="brand-dot"></span>zen</div>
+      <div class="hud">
+        <span class="hud-badge"><span class="hud-dot"></span><span id="ball-counter">0 balls</span></span>
       </div>
     </div>
-  </body>
+
+    <!-- ═══ UI PANEL ═══ -->
+    <div id="ui-container">
+
+      <!-- Tab Bar -->
+      <nav class="tab-bar">
+        <button class="tab active" data-tab="tab-controls">
+          <span class="tab-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <circle cx="9" cy="6" r="1.8" fill="currentColor" stroke="none" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none" />
+              <line x1="4" y1="18" x2="20" y2="18" />
+              <circle cx="11" cy="18" r="1.8" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          <span class="tab-label">Controls</span>
+        </button>
+        <button class="tab" data-tab="tab-style">
+          <span class="tab-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path
+                d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.1-1.8-.3-.5-.1-1.2.5-1.4.7-.2 1.6 0 2.4 0A3 3 0 0 0 19 15c0-6-3-12-7-12Z" />
+              <circle cx="7.6" cy="10.6" r="1.15" fill="currentColor" stroke="none" />
+              <circle cx="9.6" cy="7" r="1.15" fill="currentColor" stroke="none" />
+              <circle cx="14.1" cy="7.6" r="1.15" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          <span class="tab-label">Style</span>
+        </button>
+        <button class="tab" data-tab="tab-random">
+          <span class="tab-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M3 6h3.5a4 4 0 0 1 3.2 1.6L15 15.4A4 4 0 0 0 18.3 17H21" />
+              <path d="M17 3l4 3-4 3" />
+              <path d="M3 17h3.5a4 4 0 0 0 3.2-1.6l.6-.8" />
+              <path d="M17 21l4-3-4-3" />
+            </svg>
+          </span>
+          <span class="tab-label">Random</span>
+        </button>
+      </nav>
+
+      <!-- ─── TAB: Controls ─── -->
+      <div id="tab-controls" class="tab-panel active">
+
+        <div class="ctrl-row">
+          <button id="btn-add" class="btn-primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Ball
+          </button>
+          <button id="btn-clear" class="btn-ghost">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7h16" />
+              <path d="M9 7V4h6v3" />
+              <path d="M6 7l1 13h10l1-13" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+            Clear All
+          </button>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-toggle-row">
+            <span class="ctrl-label">Gravity</span>
+            <label class="switch"><input type="checkbox" id="opt-gravity" checked><span class="track"><span
+                  class="thumb"></span></span></label>
+          </div>
+          <div class="slider-row" id="gravity-slider-row">
+            <input type="range" id="opt-gravity-val" min="0" max="100" value="20" class="range">
+            <span class="range-val" id="gravity-val-label">0.20</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-toggle-row">
+            <span class="ctrl-label">Ball Collisions</span>
+            <label class="switch"><input type="checkbox" id="opt-collision"><span class="track"><span
+                  class="thumb"></span></span></label>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-toggle-row">
+            <span class="ctrl-label">Disappear on Bounce</span>
+            <label class="switch"><input type="checkbox" id="opt-disappear"><span class="track"><span
+                  class="thumb"></span></span></label>
+          </div>
+          <div class="slider-row hidden" id="bounces-row">
+            <span class="ctrl-label-sm">Max Bounces</span>
+            <input type="range" id="opt-bounces" min="1" max="50" value="5" class="range">
+            <span class="range-val" id="bounces-label">5</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label">Initial Speed</span>
+          <div class="slider-row">
+            <input type="range" id="opt-speed" min="1" max="20" value="5" class="range">
+            <span class="range-val" id="speed-label">5</span>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label">Ball Size</span>
+          <div class="slider-row dual">
+            <span class="ctrl-label-sm">Min</span>
+            <input type="range" id="opt-size-min" min="4" max="30" value="8" class="range">
+            <span class="range-val" id="size-min-label">8</span>
+          </div>
+          <div class="slider-row dual">
+            <span class="ctrl-label-sm">Max</span>
+            <input type="range" id="opt-size-max" min="10" max="60" value="18" class="range">
+            <span class="range-val" id="size-max-label">18</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ─── TAB: Style ─── -->
+      <div id="tab-style" class="tab-panel">
+
+        <div class="ctrl-group">
+          <div class="ctrl-toggle-row">
+            <span class="ctrl-label">Dark Mode</span>
+            <label class="switch"><input type="checkbox" id="opt-darkmode" checked><span class="track"><span
+                  class="thumb"></span></span></label>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label">Color Palette</span>
+          <div class="palette-grid">
+            <button class="palette-btn active" data-palette="neon"><span
+                class="swatch"></span><span>Neon</span></button>
+            <button class="palette-btn" data-palette="pastel"><span class="swatch"></span><span>Pastel</span></button>
+            <button class="palette-btn" data-palette="mono"><span class="swatch"></span><span>Mono</span></button>
+            <button class="palette-btn" data-palette="rainbow"><span class="swatch"></span><span>Rainbow</span></button>
+            <button class="palette-btn" data-palette="fire"><span class="swatch"></span><span>Fire</span></button>
+            <button class="palette-btn" data-palette="ocean"><span class="swatch"></span><span>Ocean</span></button>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-toggle-row">
+            <span class="ctrl-label">Show Trail</span>
+            <label class="switch"><input type="checkbox" id="opt-trail"><span class="track"><span
+                  class="thumb"></span></span></label>
+          </div>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label">Glow Intensity</span>
+          <div class="slider-row">
+            <input type="range" id="opt-glow" min="0" max="30" value="12" class="range">
+            <span class="range-val" id="glow-label">12</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ─── TAB: Random ─── -->
+      <div id="tab-random" class="tab-panel">
+
+        <div class="random-hero">
+          <div class="random-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(-15 12 12)" />
+              <circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none" />
+              <circle cx="20.3" cy="9.1" r="1.4" fill="currentColor" stroke="none" />
+            </svg>
+          </div>
+          <h2 class="random-title">Random Mode</h2>
+          <p class="random-desc">Sit back and watch. Balls spawn automatically and settings change on their own.</p>
+          <label class="big-switch">
+            <input type="checkbox" id="opt-random">
+            <span class="big-track"><span class="big-thumb"></span></span>
+            <span class="big-label" id="random-status">OFF</span>
+          </label>
+        </div>
+
+        <div class="ctrl-group">
+          <span class="ctrl-label">Change Speed</span>
+          <div class="slider-row">
+            <span class="ctrl-label-sm">Slow</span>
+            <input type="range" id="opt-random-speed" min="1" max="10" value="5" class="range">
+            <span class="ctrl-label-sm">Fast</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+  <script>
+    // Cosmetic only: keeps a --fill custom property in sync with each
+    // range input's value so style.css can paint a filled track.
+    (function () {
+      function updateFill(el) {
+        var min = parseFloat(el.min || 0);
+        var max = parseFloat(el.max || 100);
+        var val = parseFloat(el.value);
+        var pct = ((val - min) / (max - min)) * 100;
+        el.style.setProperty('--fill', pct + '%');
+      }
+      var ranges = document.querySelectorAll('input[type="range"]');
+      for (var i = 0; i < ranges.length; i++) {
+        updateFill(ranges[i]);
+        ranges[i].addEventListener('input', function (e) { updateFill(e.target); });
+      }
+    })();
+  </script>
+</body>
+
 </html>
