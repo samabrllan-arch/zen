@@ -1,179 +1,172 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="./favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0c0c14" />
-    <title>Zen Shards</title>
+    <meta name="theme-color" content="#08080f" />
+    <title>Zen Balls</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/zen/assets/index-B0klC_4X.js"></script>
-    <link rel="stylesheet" crossorigin href="/zen/assets/index-Bg2S5ICX.css">
+    <script type="module" crossorigin src="/zen/assets/index-B32clN4e.js"></script>
+    <link rel="stylesheet" crossorigin href="/zen/assets/index-BACO_yxJ.css">
   <link rel="manifest" href="/zen/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/zen/registerSW.js"></script></head>
   <body>
     <div id="app">
 
-      <!-- ═══════ GAME AREA (Top) ═══════ -->
+      <!-- ═══ CANVAS ═══ -->
       <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-
-        <!-- HUD Overlay -->
-        <div class="hud">
-          <button id="btn-toggle-mode" class="hud-pill">
-            <span class="pill-dot"></span>
-            <span id="mode-label">SHARDS</span>
-          </button>
-          <div class="hud-currency">
-            <span class="currency-icon">◆</span>
-            <span id="currency" class="currency-value">0</span>
-          </div>
-        </div>
-
-        <!-- Vignette overlay for depth -->
         <div class="vignette"></div>
+        <div class="hud">
+          <span class="hud-badge" id="ball-counter">0 balls</span>
+        </div>
       </div>
 
-      <!-- ═══════ UI PANEL (Bottom) ═══════ -->
+      <!-- ═══ UI PANEL ═══ -->
       <div id="ui-container">
 
         <!-- Tab Bar -->
         <nav class="tab-bar">
-          <button class="tab active" data-tab="tab-sparks">
-            <span class="tab-icon">⚡</span>
-            <span class="tab-label">Sparks</span>
+          <button class="tab active" data-tab="tab-controls">
+            <span class="tab-icon">⚙</span><span class="tab-label">Controls</span>
           </button>
-          <button class="tab" data-tab="tab-upgrades">
-            <span class="tab-icon">⬆</span>
-            <span class="tab-label">Upgrades</span>
+          <button class="tab" data-tab="tab-style">
+            <span class="tab-icon">🎨</span><span class="tab-label">Style</span>
           </button>
-          <button class="tab" data-tab="tab-chaos" id="tab-chaos-btn" style="display:none;">
-            <span class="tab-icon">◉</span>
-            <span class="tab-label">Chaos</span>
+          <button class="tab" data-tab="tab-random">
+            <span class="tab-icon">🎲</span><span class="tab-label">Random</span>
           </button>
         </nav>
 
-        <!-- ─── Tab: Sparks ─── -->
-        <div id="tab-sparks" class="tab-panel active">
-          <div class="card-list">
+        <!-- ─── TAB: Controls ─── -->
+        <div id="tab-controls" class="tab-panel active">
 
-            <div class="card">
-              <div class="card-left">
-                <div class="card-icon-wrap spark-glow">
-                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                </div>
-                <div class="card-meta">
-                  <span class="card-name">Spark</span>
-                  <span class="card-stat">DMG <strong id="stat-dmg">1.0</strong></span>
-                </div>
-              </div>
-              <div class="card-right">
-                <button id="btn-add-spark" class="btn-buy">
-                  <span class="btn-label">+1</span>
-                  <span class="btn-cost"><span id="cost-spark">10</span> ◆</span>
-                </button>
-                <button id="btn-upg-spark" class="btn-buy accent">
-                  <span class="btn-label">LVL UP</span>
-                  <span class="btn-cost"><span id="cost-upg-spark">20</span> ◆</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-left">
-                <div class="card-icon-wrap merge-glow">
-                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                </div>
-                <div class="card-meta">
-                  <span class="card-name">Merge</span>
-                  <span class="card-stat">Sparks: <strong id="stat-count">1</strong></span>
-                </div>
-              </div>
-              <div class="card-right">
-                <button id="btn-merge-spark" class="btn-buy wide">
-                  <span class="btn-label">FUSE</span>
-                  <span class="btn-cost">Needs 2</span>
-                </button>
-              </div>
-            </div>
-
+          <div class="ctrl-row">
+            <button id="btn-add" class="btn-primary">+ Add Ball</button>
+            <button id="btn-clear" class="btn-ghost">Clear All</button>
           </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-toggle-row">
+              <span class="ctrl-label">Gravity</span>
+              <label class="switch"><input type="checkbox" id="opt-gravity" checked><span class="track"><span class="thumb"></span></span></label>
+            </div>
+            <div class="slider-row" id="gravity-slider-row">
+              <input type="range" id="opt-gravity-val" min="0" max="100" value="20" class="range">
+              <span class="range-val" id="gravity-val-label">0.20</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-toggle-row">
+              <span class="ctrl-label">Ball Collisions</span>
+              <label class="switch"><input type="checkbox" id="opt-collision"><span class="track"><span class="thumb"></span></span></label>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-toggle-row">
+              <span class="ctrl-label">Disappear on Bounce</span>
+              <label class="switch"><input type="checkbox" id="opt-disappear"><span class="track"><span class="thumb"></span></span></label>
+            </div>
+            <div class="slider-row hidden" id="bounces-row">
+              <span class="ctrl-label-sm">Max Bounces</span>
+              <input type="range" id="opt-bounces" min="1" max="50" value="5" class="range">
+              <span class="range-val" id="bounces-label">5</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label">Initial Speed</span>
+            <div class="slider-row">
+              <input type="range" id="opt-speed" min="1" max="20" value="5" class="range">
+              <span class="range-val" id="speed-label">5</span>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label">Ball Size</span>
+            <div class="slider-row dual">
+              <span class="ctrl-label-sm">Min</span>
+              <input type="range" id="opt-size-min" min="4" max="30" value="8" class="range">
+              <span class="range-val" id="size-min-label">8</span>
+            </div>
+            <div class="slider-row dual">
+              <span class="ctrl-label-sm">Max</span>
+              <input type="range" id="opt-size-max" min="10" max="60" value="18" class="range">
+              <span class="range-val" id="size-max-label">18</span>
+            </div>
+          </div>
+
         </div>
 
-        <!-- ─── Tab: Upgrades ─── -->
-        <div id="tab-upgrades" class="tab-panel">
-          <div class="card-list">
-            <div class="card locked">
-              <div class="card-left">
-                <div class="card-icon-wrap">
-                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                </div>
-                <div class="card-meta">
-                  <span class="card-name">Spawn Rate</span>
-                  <span class="card-stat">Coming Soon</span>
-                </div>
-              </div>
-              <div class="card-right">
-                <button class="btn-buy disabled">
-                  <span class="btn-label">🔒</span>
-                </button>
-              </div>
+        <!-- ─── TAB: Style ─── -->
+        <div id="tab-style" class="tab-panel">
+
+          <div class="ctrl-group">
+            <div class="ctrl-toggle-row">
+              <span class="ctrl-label">Dark Mode</span>
+              <label class="switch"><input type="checkbox" id="opt-darkmode" checked><span class="track"><span class="thumb"></span></span></label>
             </div>
           </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label">Color Palette</span>
+            <div class="palette-grid">
+              <button class="palette-btn active" data-palette="neon">Neon</button>
+              <button class="palette-btn" data-palette="pastel">Pastel</button>
+              <button class="palette-btn" data-palette="mono">Mono</button>
+              <button class="palette-btn" data-palette="rainbow">Rainbow</button>
+              <button class="palette-btn" data-palette="fire">Fire</button>
+              <button class="palette-btn" data-palette="ocean">Ocean</button>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-toggle-row">
+              <span class="ctrl-label">Show Trail</span>
+              <label class="switch"><input type="checkbox" id="opt-trail"><span class="track"><span class="thumb"></span></span></label>
+            </div>
+          </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label">Glow Intensity</span>
+            <div class="slider-row">
+              <input type="range" id="opt-glow" min="0" max="30" value="12" class="range">
+              <span class="range-val" id="glow-label">12</span>
+            </div>
+          </div>
+
         </div>
 
-        <!-- ─── Tab: Chaos ─── -->
-        <div id="tab-chaos" class="tab-panel">
-          <div class="card-list">
+        <!-- ─── TAB: Random ─── -->
+        <div id="tab-random" class="tab-panel">
 
-            <div class="card">
-              <div class="card-left">
-                <div class="card-icon-wrap chaos-glow">
-                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-                </div>
-                <div class="card-meta">
-                  <span class="card-name">Add Ball</span>
-                  <span class="card-stat">Balls: <strong id="ball-count">0</strong></span>
-                </div>
-              </div>
-              <div class="card-right">
-                <button id="btn-add-ball" class="btn-buy wide">
-                  <span class="btn-label">+ ADD</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-left full">
-                <div class="toggle-group">
-                  <div class="toggle-item">
-                    <span>Gravity</span>
-                    <label class="switch">
-                      <input type="checkbox" id="toggle-gravity" checked>
-                      <span class="switch-track"><span class="switch-thumb"></span></span>
-                    </label>
-                  </div>
-                  <div class="toggle-item">
-                    <span>Collisions</span>
-                    <label class="switch">
-                      <input type="checkbox" id="toggle-collision">
-                      <span class="switch-track"><span class="switch-thumb"></span></span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="card">
-              <button id="btn-clear-balls" class="btn-danger-full">Clear All</button>
-            </div>
-
+          <div class="random-hero">
+            <div class="random-icon">🎲</div>
+            <h2 class="random-title">Random Mode</h2>
+            <p class="random-desc">Sit back and watch. Balls spawn automatically and settings change on their own.</p>
+            <label class="big-switch">
+              <input type="checkbox" id="opt-random">
+              <span class="big-track"><span class="big-thumb"></span></span>
+              <span class="big-label" id="random-status">OFF</span>
+            </label>
           </div>
+
+          <div class="ctrl-group">
+            <span class="ctrl-label">Change Speed</span>
+            <div class="slider-row">
+              <span class="ctrl-label-sm">Slow</span>
+              <input type="range" id="opt-random-speed" min="1" max="10" value="5" class="range">
+              <span class="ctrl-label-sm">Fast</span>
+            </div>
+          </div>
+
         </div>
 
       </div>
-
     </div>
   </body>
 </html>
