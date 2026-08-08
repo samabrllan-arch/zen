@@ -1,158 +1,252 @@
 import { setupCanvas } from './utils/canvas.js';
-import { ArcheryMode } from './modes/archery.js';
 import { BouncingMode } from './modes/bouncing.js';
 
-// Setup Canvas
+// Canvas
 const { canvas, ctx } = setupCanvas('gameCanvas');
 
-// Global State
-let currency = 0;
-const currencyEl = document.getElementById('currency');
+// Engine
+const engine = new BouncingMode(canvas, ctx);
+engine.start();
 
-function updateCurrency(amount) {
-  currency += amount;
-  currencyEl.textContent = formatNumber(Math.floor(currency));
+// UI refs
+const ballCounter = document.getElementById('ball-counter');
+
+function updateCounter() {
+  ballCounter.textContent = `${engine.balls.length} ball${engine.balls.length !== 1 ? 's' : ''}`;
 }
 
-function formatNumber(n) {
-  if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return n.toString();
-}
+// ═══ TAB LOGIC ═══
+const tabs = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.tab-panel');
 
-// Initialize Modes
-const archery = new ArcheryMode(canvas, ctx, updateCurrency);
-const bouncing = new BouncingMode(canvas, ctx);
-
-let currentMode = archery;
-let animationFrameId = null;
-
-// UI Elements
-const btnToggleMode = document.getElementById('btn-toggle-mode');
-const modeLabel = document.getElementById('mode-label');
-const tabBtns = document.querySelectorAll('.tab');
-const tabPanels = document.querySelectorAll('.tab-panel');
-const tabChaosBtn = document.getElementById('tab-chaos-btn');
-
-// Mode Switching Logic
-btnToggleMode.addEventListener('click', () => {
-  if (currentMode === archery) {
-    archery.stop();
-    currentMode = bouncing;
-    bouncing.start();
-    modeLabel.textContent = 'CHAOS';
-
-    switchTab('tab-chaos');
-    tabChaosBtn.style.display = 'flex';
-  } else {
-    bouncing.stop();
-    currentMode = archery;
-    archery.start();
-    modeLabel.textContent = 'SHARDS';
-
-    switchTab('tab-sparks');
-    tabChaosBtn.style.display = 'none';
-  }
+tabs.forEach(t => {
+  t.addEventListener('click', () => {
+    tabs.forEach(b => b.classList.toggle('active', b === t));
+    panels.forEach(p => p.classList.toggle('active', p.id === t.dataset.tab));
+  });
 });
 
-// Tabs Logic
-function switchTab(tabId) {
-  tabBtns.forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === tabId);
-  });
-  tabPanels.forEach(panel => {
-    panel.classList.toggle('active', panel.id === tabId);
-  });
-}
+// ═══ CONTROLS TAB ═══
+document.getElementById('btn-add').addEventListener('click', () => {
+  engine.addBall();
+  updateCounter();
+});
 
-tabBtns.forEach(btn => {
+document.getElementById('btn-clear').addEventListener('click', () => {
+  engine.clearBalls();
+  updateCounter();
+});
+
+// Gravity toggle + slider
+const gravToggle = document.getElementById('opt-gravity');
+const gravSlider = document.getElementById('opt-gravity-val');
+const gravLabel = document.getElementById('gravity-val-label');
+const gravSliderRow = document.getElementById('gravity-slider-row');
+
+gravToggle.addEventListener('change', () => {
+  engine.setGravity(gravToggle.checked);
+  gravSliderRow.classList.toggle('hidden', !gravToggle.checked);
+});
+
+gravSlider.addEventListener('input', () => {
+  const v = gravSlider.value / 100;
+  engine.setGravityVal(v);
+  gravLabel.textContent = v.toFixed(2);
+});
+
+// Collision
+document.getElementById('opt-collision').addEventListener('change', (e) => {
+  engine.setCollision(e.target.checked);
+});
+
+// Disappear
+const disappearToggle = document.getElementById('opt-disappear');
+const bouncesRow = document.getElementById('bounces-row');
+const bouncesSlider = document.getElementById('opt-bounces');
+const bouncesLabel = document.getElementById('bounces-label');
+
+disappearToggle.addEventListener('change', () => {
+  engine.setDisappear(disappearToggle.checked);
+  bouncesRow.classList.toggle('hidden', !disappearToggle.checked);
+});
+
+bouncesSlider.addEventListener('input', () => {
+  engine.setMaxBounces(parseInt(bouncesSlider.value));
+  bouncesLabel.textContent = bouncesSlider.value;
+});
+
+// Speed
+const speedSlider = document.getElementById('opt-speed');
+const speedLabel = document.getElementById('speed-label');
+speedSlider.addEventListener('input', () => {
+  engine.setSpeed(parseInt(speedSlider.value));
+  speedLabel.textContent = speedSlider.value;
+});
+
+// Size
+const sizeMinSlider = document.getElementById('opt-size-min');
+const sizeMinLabel = document.getElementById('size-min-label');
+const sizeMaxSlider = document.getElementById('opt-size-max');
+const sizeMaxLabel = document.getElementById('size-max-label');
+
+sizeMinSlider.addEventListener('input', () => {
+  engine.setSizeMin(parseInt(sizeMinSlider.value));
+  sizeMinLabel.textContent = sizeMinSlider.value;
+});
+sizeMaxSlider.addEventListener('input', () => {
+  engine.setSizeMax(parseInt(sizeMaxSlider.value));
+  sizeMaxLabel.textContent = sizeMaxSlider.value;
+});
+
+// ═══ STYLE TAB ═══
+// Dark mode
+document.getElementById('opt-darkmode').addEventListener('change', (e) => {
+  document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
+  document.querySelector('meta[name="theme-color"]')
+    .setAttribute('content', e.target.checked ? '#08080f' : '#f0f0f5');
+});
+
+// Palette
+const paletteBtns = document.querySelectorAll('.palette-btn');
+paletteBtns.forEach(btn => {
   btn.addEventListener('click', () => {
-    switchTab(btn.dataset.tab);
+    paletteBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    engine.setPalette(btn.dataset.palette);
   });
 });
 
-// Archery Upgrades UI
-const statDmg = document.getElementById('stat-dmg');
-const statCount = document.getElementById('stat-count');
-const costSparkEl = document.getElementById('cost-spark');
-const costUpgSparkEl = document.getElementById('cost-upg-spark');
+// Trail
+document.getElementById('opt-trail').addEventListener('change', (e) => {
+  engine.setTrail(e.target.checked);
+});
 
-let sparkCost = 10;
-let upgCost = 20;
+// Glow
+const glowSlider = document.getElementById('opt-glow');
+const glowLabel = document.getElementById('glow-label');
+glowSlider.addEventListener('input', () => {
+  engine.setGlow(parseInt(glowSlider.value));
+  glowLabel.textContent = glowSlider.value;
+});
 
-function updateArcheryUI() {
-  statDmg.textContent = archery.damage.toFixed(1);
-  statCount.textContent = archery.arrows.length;
-  costSparkEl.textContent = formatNumber(sparkCost);
-  costUpgSparkEl.textContent = formatNumber(upgCost);
+// ═══ RANDOM MODE ═══
+const randomToggle = document.getElementById('opt-random');
+const randomStatus = document.getElementById('random-status');
+const randomSpeedSlider = document.getElementById('opt-random-speed');
+
+let randomInterval = null;
+let spawnInterval = null;
+
+function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function randomizeSettings() {
+  // Gravity
+  const grav = Math.random() > 0.3;
+  engine.setGravity(grav);
+  gravToggle.checked = grav;
+  if (grav) {
+    const gv = Math.random() * 0.8;
+    engine.setGravityVal(gv);
+    gravSlider.value = gv * 100;
+    gravLabel.textContent = gv.toFixed(2);
+  }
+
+  // Collision
+  const col = Math.random() > 0.5;
+  engine.setCollision(col);
+  document.getElementById('opt-collision').checked = col;
+
+  // Speed
+  const spd = getRandomInt(2, 15);
+  engine.setSpeed(spd);
+  speedSlider.value = spd;
+  speedLabel.textContent = spd;
+
+  // Size
+  const sMin = getRandomInt(4, 20);
+  const sMax = getRandomInt(sMin + 5, 60);
+  engine.setSizeMin(sMin);
+  engine.setSizeMax(sMax);
+  sizeMinSlider.value = sMin;
+  sizeMaxSlider.value = sMax;
+  sizeMinLabel.textContent = sMin;
+  sizeMaxLabel.textContent = sMax;
+
+  // Disappear
+  const dis = Math.random() > 0.5;
+  engine.setDisappear(dis);
+  disappearToggle.checked = dis;
+  if (dis) {
+    const bn = getRandomInt(2, 30);
+    engine.setMaxBounces(bn);
+    bouncesSlider.value = bn;
+    bouncesLabel.textContent = bn;
+  }
+
+  // Trail
+  const trail = Math.random() > 0.5;
+  engine.setTrail(trail);
+  document.getElementById('opt-trail').checked = trail;
+
+  // Glow
+  const glow = getRandomInt(0, 25);
+  engine.setGlow(glow);
+  glowSlider.value = glow;
+  glowLabel.textContent = glow;
+
+  // Palette
+  const palettes = ['neon', 'pastel', 'mono', 'rainbow', 'fire', 'ocean'];
+  const pal = palettes[getRandomInt(0, palettes.length - 1)];
+  engine.setPalette(pal);
+  paletteBtns.forEach(b => b.classList.toggle('active', b.dataset.palette === pal));
 }
 
-document.getElementById('btn-add-spark').addEventListener('click', () => {
-  if (currency >= sparkCost) {
-    updateCurrency(-sparkCost);
-    archery.addArrow();
-    sparkCost = Math.floor(sparkCost * 1.5);
-    updateArcheryUI();
+function startRandom() {
+  const speed = parseInt(randomSpeedSlider.value);
+  const changeMs = Math.max(800, 5000 - speed * 400);
+  const spawnMs = Math.max(300, 1200 - speed * 80);
+
+  randomizeSettings();
+  randomInterval = setInterval(randomizeSettings, changeMs);
+  spawnInterval = setInterval(() => {
+    if (engine.balls.length < 80) {
+      engine.addBall();
+      updateCounter();
+    }
+  }, spawnMs);
+}
+
+function stopRandom() {
+  clearInterval(randomInterval);
+  clearInterval(spawnInterval);
+  randomInterval = null;
+  spawnInterval = null;
+}
+
+randomToggle.addEventListener('change', () => {
+  if (randomToggle.checked) {
+    randomStatus.textContent = 'ON';
+    startRandom();
+  } else {
+    randomStatus.textContent = 'OFF';
+    stopRandom();
   }
 });
 
-document.getElementById('btn-upg-spark').addEventListener('click', () => {
-  if (currency >= upgCost) {
-    updateCurrency(-upgCost);
-    archery.damage *= 1.2;
-    upgCost = Math.floor(upgCost * 1.8);
-    updateArcheryUI();
+randomSpeedSlider.addEventListener('input', () => {
+  if (randomToggle.checked) {
+    stopRandom();
+    startRandom();
   }
 });
 
-document.getElementById('btn-merge-spark').addEventListener('click', () => {
-  if (archery.arrows.length >= 2) {
-    archery.arrows.pop();
-    archery.damage *= 2;
-    updateArcheryUI();
-  }
-});
-
-// Bouncing Mode UI
-const ballCountEl = document.getElementById('ball-count');
-
-document.getElementById('btn-add-ball').addEventListener('click', () => {
-  bouncing.addBall();
-  ballCountEl.textContent = bouncing.balls.length;
-});
-
-document.getElementById('btn-clear-balls').addEventListener('click', () => {
-  bouncing.clearBalls();
-  ballCountEl.textContent = 0;
-});
-
-document.getElementById('toggle-gravity').addEventListener('change', (e) => {
-  bouncing.setGravity(e.target.checked);
-});
-
-document.getElementById('toggle-collision').addEventListener('change', (e) => {
-  bouncing.setCollision(e.target.checked);
-});
-
-// Game Loop
-let lastTime = 0;
-function gameLoop(time) {
-  const dt = time - lastTime;
-  lastTime = time;
-
+// ═══ GAME LOOP ═══
+function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (currentMode) {
-    currentMode.update(dt, time);
-    currentMode.draw();
-  }
-
-  animationFrameId = requestAnimationFrame(gameLoop);
+  engine.update();
+  engine.draw();
+  updateCounter();
+  requestAnimationFrame(gameLoop);
 }
 
-// Start
-archery.start();
-updateArcheryUI();
-animationFrameId = requestAnimationFrame(gameLoop);
+requestAnimationFrame(gameLoop);
