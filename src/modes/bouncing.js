@@ -148,14 +148,6 @@ export class BouncingMode {
     if (!this.isActive || this.isPaused) return;
     this.updateBounds();
     
-    // Spontaneous Spawn
-    if (this.spawnProbability > 0 && Math.random() < this.spawnProbability && this.balls.length < 150) {
-       // Spawn somewhere random inside the circle
-       const angle = Math.random() * Math.PI * 2;
-       const r = Math.random() * (this.boundaryRadius - this.sizeMax - 5);
-       this.addBall(this.center.x + Math.cos(angle) * r, this.center.y + Math.sin(angle) * r);
-    }
-    
     // Fade flash
     if (this.flashAlpha > 0) {
       this.flashAlpha -= 0.05;
@@ -197,16 +189,6 @@ export class BouncingMode {
         }
       }
 
-      // Spontaneous disappear
-      if (this.disappearProbability > 0 && !b.isFading) {
-         // this.disappearProbability is between 0.0 and 1.0
-         // A 1.0 (100%) means approx 1% chance per frame (very fast)
-         const chance = this.disappearProbability * 0.01;
-         if (Math.random() < chance) {
-            b.isFading = true;
-         }
-      }
-
       // Boundary collision
       const d = distance(b.x, b.y, this.center.x, this.center.y);
       if (d + b.radius > this.boundaryRadius) {
@@ -221,6 +203,19 @@ export class BouncingMode {
 
         b.bounces++;
 
+        // Spawn on bounce
+        if (this.spawnProbability > 0 && Math.random() < this.spawnProbability && this.balls.length < 150) {
+           this.addBall(); 
+        }
+
+        // Disappear on bounce (Probabilistic)
+        if (this.disappearProbability > 0 && !b.isFading) {
+           if (Math.random() < this.disappearProbability) {
+              b.isFading = true;
+           }
+        }
+
+        // Disappear on bounce (Max Bounces toggle)
         if (this.disappearOnBounce && !b.isFading) {
            if (b.bounces >= this.maxBounces) {
               b.isFading = true;

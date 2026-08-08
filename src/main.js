@@ -132,7 +132,7 @@ const spawnProbSlider = document.getElementById('opt-spawn-prob');
 const spawnProbLabel = document.getElementById('spawn-prob-label');
 spawnProbSlider.addEventListener('input', () => {
   const prob = parseInt(spawnProbSlider.value);
-  engine.setSpawnProb(prob / 1000); // Scale down so 100% isn't chaotic
+  engine.setSpawnProb(prob / 100); // Scale 0 to 1
   spawnProbLabel.textContent = prob + '%';
 });
 
