@@ -14,7 +14,7 @@ export default defineConfig({
         description: 'Una aplicación para relajarse con polígonos y físicas',
         theme_color: '#0a0a0a',
         background_color: '#0a0a0a',
-        display: 'fullscreen',
+        display: 'standalone',
         orientation: 'portrait',
         icons: [
           {
@@ -28,6 +28,22 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
+          }
+        ]
+      },
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: /.*/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'zen-network-first-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 24 * 60 * 60
+              },
+              networkTimeoutSeconds: 5
+            }
           }
         ]
       }
