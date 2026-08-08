@@ -16,7 +16,7 @@ engine.start();
 const ballCounter = document.getElementById('ball-counter');
 
 function updateCounter() {
-  ballCounter.textContent = `${engine.balls.length} ball${engine.balls.length !== 1 ? 's' : ''}`;
+  ballCounter.textContent = `${engine.balls.length} bola${engine.balls.length !== 1 ? 's' : ''}`;
 }
 
 // ═══ INTERACTION ═══
