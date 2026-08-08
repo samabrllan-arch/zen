@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="es" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
@@ -12,9 +12,9 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <script type="module" crossorigin src="/zen/assets/index-ClVNJlnZ.js"></script>
+  <script type="module" crossorigin src="/zen/assets/index-DOwwk0Tc.js"></script>
   <link rel="stylesheet" crossorigin href="/zen/assets/index-pcjOAsNZ.css">
-<link rel="manifest" href="/zen/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/zen/registerSW.js"></script></head>
+<link rel="manifest" href="/zen/manifest.webmanifest"></head>
 
 <body>
   <div id="app">
@@ -34,14 +34,14 @@
       
       <!-- ═══ HUD & FLOATING BUTTONS ═══ -->
       <div class="hud">
-        <span class="hud-badge"><span class="hud-dot"></span><span id="ball-counter">0 balls</span></span>
-        <button id="btn-pause" class="floating-btn" title="Pause / Play">
+        <span class="hud-badge"><span class="hud-dot"></span><span id="ball-counter">0 bolas</span></span>
+        <button id="btn-pause" class="floating-btn" title="Pausar / Reproducir">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="5" width="4" height="14" />
             <rect x="14" y="5" width="4" height="14" />
           </svg>
         </button>
-        <button id="btn-settings" class="floating-btn" title="Settings">
+        <button id="btn-settings" class="floating-btn" title="Configuración">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -55,7 +55,7 @@
       <div class="modal-content">
         
         <div class="modal-header">
-          <h2 class="modal-title">Zen Settings</h2>
+          <h2 class="modal-title">Configuración Zen</h2>
           <button id="btn-close-modal" class="btn-ghost modal-close">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -75,7 +75,7 @@
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Add Ball
+              Añadir Bola
             </button>
             <button id="btn-clear" class="btn-ghost">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -85,16 +85,16 @@
                 <line x1="10" y1="11" x2="10" y2="17" />
                 <line x1="14" y1="11" x2="14" y2="17" />
               </svg>
-              Clear All
+              Limpiar Todo
             </button>
           </div>
 
           <!-- ─── SECTION: PHYSICS ─── -->
-          <div class="section-title">Physics & Behavior</div>
+          <div class="section-title">Física y Comportamiento</div>
 
           <div class="ctrl-group">
             <div class="ctrl-toggle-row">
-              <span class="ctrl-label">Gravity</span>
+              <span class="ctrl-label">Gravedad</span>
               <label class="switch"><input type="checkbox" id="opt-gravity" checked><span class="track"><span class="thumb"></span></span></label>
             </div>
             <div class="slider-row" id="gravity-slider-row">
@@ -105,43 +105,47 @@
 
           <div class="ctrl-group">
             <div class="ctrl-toggle-row" style="margin-bottom: 12px;">
-              <span class="ctrl-label">Ball Collisions</span>
+              <span class="ctrl-label">Colisiones de Bolas</span>
               <label class="switch"><input type="checkbox" id="opt-collision"><span class="track"><span class="thumb"></span></span></label>
             </div>
             
-            <span class="ctrl-label-sm">Collision Effects</span>
+            <span class="ctrl-label-sm">Efectos de Colisión</span>
             <div class="palette-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-              <button class="effect-btn active" data-effect="none">None</button>
-              <button class="effect-btn" data-effect="particles">Particles</button>
-              <button class="effect-btn" data-effect="flash">Flash</button>
+              <button class="effect-btn active" data-effect="none">Ninguno</button>
+              <button class="effect-btn" data-effect="particles">Partículas</button>
+              <button class="effect-btn" data-effect="flash">Destello</button>
             </div>
           </div>
 
           <div class="ctrl-group">
-            <span class="ctrl-label">Spawn Probability (Auto)</span>
+            <!-- Movido el prob de desaparición al lado del prob de aparición -->
+            <span class="ctrl-label">Prob. de Aparición Espontánea</span>
             <div class="slider-row">
               <input type="range" id="opt-spawn-prob" min="0" max="100" value="0" class="range">
               <span class="range-val" id="spawn-prob-label">0%</span>
             </div>
             
-            <div class="ctrl-toggle-row" style="margin-top: 14px;">
-              <span class="ctrl-label">Disappear on Bounce</span>
-              <label class="switch"><input type="checkbox" id="opt-disappear"><span class="track"><span class="thumb"></span></span></label>
-            </div>
-            <div class="slider-row hidden" id="bounces-row">
-              <span class="ctrl-label-sm" style="min-width: 60px;">Probability</span>
+            <span class="ctrl-label" style="margin-top: 14px;">Prob. de Desaparición Espontánea</span>
+            <div class="slider-row">
               <input type="range" id="opt-disappear-prob" min="0" max="100" value="20" class="range">
               <span class="range-val" id="disappear-prob-label">20%</span>
             </div>
-            <div class="slider-row hidden" id="bounces-max-row" style="margin-top:4px;">
-              <span class="ctrl-label-sm" style="min-width: 60px;">Max Bounces</span>
+          </div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-toggle-row">
+              <span class="ctrl-label">Desaparecer al Rebotar</span>
+              <label class="switch"><input type="checkbox" id="opt-disappear"><span class="track"><span class="thumb"></span></span></label>
+            </div>
+            <div class="slider-row hidden" id="bounces-max-row" style="margin-top:14px;">
+              <span class="ctrl-label-sm" style="min-width: 60px;">Rebotes Máximos</span>
               <input type="range" id="opt-bounces" min="1" max="50" value="5" class="range">
               <span class="range-val" id="bounces-label">5</span>
             </div>
           </div>
 
           <div class="ctrl-group">
-            <span class="ctrl-label">Initial Speed</span>
+            <span class="ctrl-label">Velocidad Inicial</span>
             <div class="slider-row">
               <input type="range" id="opt-speed" min="1" max="20" value="5" class="range">
               <span class="range-val" id="speed-label">5</span>
@@ -149,55 +153,55 @@
           </div>
 
           <div class="ctrl-group">
-            <span class="ctrl-label">Ball Size</span>
+            <span class="ctrl-label">Tamaño de Bola</span>
             <div class="slider-row dual">
-              <span class="ctrl-label-sm">Min</span>
+              <span class="ctrl-label-sm">Mín</span>
               <input type="range" id="opt-size-min" min="4" max="30" value="8" class="range">
               <span class="range-val" id="size-min-label">8</span>
             </div>
             <div class="slider-row dual">
-              <span class="ctrl-label-sm">Max</span>
+              <span class="ctrl-label-sm">Máx</span>
               <input type="range" id="opt-size-max" min="10" max="60" value="18" class="range">
               <span class="range-val" id="size-max-label">18</span>
             </div>
           </div>
 
           <!-- ─── SECTION: STYLE ─── -->
-          <div class="section-title" style="margin-top: 24px;">Style & Aesthetics</div>
+          <div class="section-title" style="margin-top: 24px;">Estilo y Estética</div>
 
           <div class="ctrl-group">
             <div class="ctrl-toggle-row">
-              <span class="ctrl-label">Dark Mode</span>
+              <span class="ctrl-label">Modo Oscuro</span>
               <label class="switch"><input type="checkbox" id="opt-darkmode" checked><span class="track"><span class="thumb"></span></span></label>
             </div>
           </div>
 
           <div class="ctrl-group">
-            <span class="ctrl-label">Color Palette</span>
+            <span class="ctrl-label">Paleta de Colores</span>
             <div class="palette-grid">
-              <button class="palette-btn active" data-palette="neon"><span class="swatch"></span><span>Neon</span></button>
+              <button class="palette-btn active" data-palette="neon"><span class="swatch"></span><span>Neón</span></button>
               <button class="palette-btn" data-palette="pastel"><span class="swatch"></span><span>Pastel</span></button>
               <button class="palette-btn" data-palette="mono"><span class="swatch"></span><span>Mono</span></button>
-              <button class="palette-btn" data-palette="rainbow"><span class="swatch"></span><span>Rainbow</span></button>
-              <button class="palette-btn" data-palette="fire"><span class="swatch"></span><span>Fire</span></button>
-              <button class="palette-btn" data-palette="ocean"><span class="swatch"></span><span>Ocean</span></button>
+              <button class="palette-btn" data-palette="rainbow"><span class="swatch"></span><span>Arcoíris</span></button>
+              <button class="palette-btn" data-palette="fire"><span class="swatch"></span><span>Fuego</span></button>
+              <button class="palette-btn" data-palette="ocean"><span class="swatch"></span><span>Océano</span></button>
             </div>
           </div>
 
           <div class="ctrl-group">
             <div class="ctrl-toggle-row">
-              <span class="ctrl-label">Show Trail</span>
+              <span class="ctrl-label">Mostrar Estela</span>
               <label class="switch"><input type="checkbox" id="opt-trail"><span class="track"><span class="thumb"></span></span></label>
             </div>
           </div>
 
           <div class="ctrl-group">
-            <span class="ctrl-label">Glow Intensity</span>
+            <span class="ctrl-label">Intensidad de Brillo</span>
             <div class="slider-row">
               <input type="range" id="opt-glow" min="0" max="30" value="12" class="range">
               <span class="range-val" id="glow-label">12</span>
             </div>
-            <span class="ctrl-label" style="margin-top: 14px;">Border Thickness</span>
+            <span class="ctrl-label" style="margin-top: 14px;">Grosor de Borde</span>
             <div class="slider-row">
               <input type="range" id="opt-border-thick" min="1" max="10" value="2" class="range">
               <span class="range-val" id="border-thick-label">2</span>
@@ -205,7 +209,7 @@
           </div>
 
           <!-- ─── SECTION: RANDOM MODE ─── -->
-          <div class="section-title" style="margin-top: 24px;">Random Sandbox</div>
+          <div class="section-title" style="margin-top: 24px;">Modo Aleatorio</div>
 
           <div class="random-hero">
             <div class="random-icon" aria-hidden="true">
@@ -215,20 +219,20 @@
                 <circle cx="20.3" cy="9.1" r="1.4" fill="currentColor" stroke="none" />
               </svg>
             </div>
-            <p class="random-desc">Sit back and watch. Settings change on their own.</p>
+            <p class="random-desc">Relájate y observa. Los ajustes cambiarán solos.</p>
             <label class="big-switch">
               <input type="checkbox" id="opt-random">
               <span class="big-track"><span class="big-thumb"></span></span>
-              <span class="big-label" id="random-status">OFF</span>
+              <span class="big-label" id="random-status">APAGADO</span>
             </label>
           </div>
 
           <div class="ctrl-group" style="margin-bottom: 20px;">
-            <span class="ctrl-label">Change Speed</span>
+            <span class="ctrl-label">Velocidad de Cambio</span>
             <div class="slider-row">
-              <span class="ctrl-label-sm">Slow</span>
+              <span class="ctrl-label-sm">Lento</span>
               <input type="range" id="opt-random-speed" min="1" max="10" value="5" class="range">
-              <span class="ctrl-label-sm">Fast</span>
+              <span class="ctrl-label-sm">Rápido</span>
             </div>
           </div>
 
@@ -238,8 +242,6 @@
   </div>
   
   <script>
-    // Cosmetic only: keeps a --fill custom property in sync with each
-    // range input's value so style.css can paint a filled track.
     (function () {
       function updateFill(el) {
         var min = parseFloat(el.min || 0);
@@ -253,8 +255,6 @@
         updateFill(ranges[i]);
         ranges[i].addEventListener('input', function (e) { updateFill(e.target); });
         ranges[i].addEventListener('change', function (e) { updateFill(e.target); });
-        
-        // Fix for iOS/Safari and quick clicks missing the fill update
         ranges[i].addEventListener('pointerdown', function (e) { updateFill(e.target); });
         ranges[i].addEventListener('pointermove', function (e) { 
           if(e.buttons > 0) updateFill(e.target); 
