@@ -94,6 +94,7 @@ export class BouncingMode {
       color: colorFn(),
       bounces: 0,
       alpha: 1,
+      isFading: false,
       trail: [],
     };
     
@@ -188,6 +189,14 @@ export class BouncingMode {
         b.trail = [];
       }
 
+      if (b.isFading) {
+        b.alpha -= 0.05;
+        if (b.alpha <= 0) {
+          this.balls.splice(i, 1);
+          continue;
+        }
+      }
+
       // Boundary collision
       const d = distance(b.x, b.y, this.center.x, this.center.y);
       if (d + b.radius > this.boundaryRadius) {
@@ -202,15 +211,10 @@ export class BouncingMode {
 
         b.bounces++;
 
-        if (this.disappearOnBounce) {
-           // Base logic: max bounces OR random chance on each bounce
+        if (this.disappearOnBounce && !b.isFading) {
            const chanceHit = Math.random() < this.disappearProbability;
            if (b.bounces >= this.maxBounces || chanceHit) {
-              b.alpha -= 0.15;
-              if (b.alpha <= 0) {
-                this.balls.splice(i, 1);
-                continue;
-              }
+              b.isFading = true;
            }
         }
       }

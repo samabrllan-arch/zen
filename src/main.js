@@ -1,5 +1,9 @@
 import { setupCanvas } from './utils/canvas.js';
 import { BouncingMode } from './modes/bouncing.js';
+import { registerSW } from 'virtual:pwa-register';
+
+// Register Service Worker
+registerSW({ immediate: true });
 
 // Canvas
 const { canvas, ctx } = setupCanvas('gameCanvas');
