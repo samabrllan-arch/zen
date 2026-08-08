@@ -11,7 +11,15 @@ const currencyEl = document.getElementById('currency');
 
 function updateCurrency(amount) {
   currency += amount;
-  currencyEl.textContent = Math.floor(currency);
+  currencyEl.textContent = formatNumber(Math.floor(currency));
+}
+
+function formatNumber(n) {
+  if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toString();
 }
 
 // Initialize Modes
@@ -23,8 +31,9 @@ let animationFrameId = null;
 
 // UI Elements
 const btnToggleMode = document.getElementById('btn-toggle-mode');
-const tabBtns = document.querySelectorAll('.tab-btn');
-const tabContents = document.querySelectorAll('.tab-content');
+const modeLabel = document.getElementById('mode-label');
+const tabBtns = document.querySelectorAll('.tab');
+const tabPanels = document.querySelectorAll('.tab-panel');
 const tabChaosBtn = document.getElementById('tab-chaos-btn');
 
 // Mode Switching Logic
@@ -33,45 +42,38 @@ btnToggleMode.addEventListener('click', () => {
     archery.stop();
     currentMode = bouncing;
     bouncing.start();
-    btnToggleMode.textContent = '🔄 Modo: Caos';
-    
-    // Switch tabs to chaos
+    modeLabel.textContent = 'CHAOS';
+
     switchTab('tab-chaos');
-    tabChaosBtn.style.display = 'block'; // Show chaos tab
+    tabChaosBtn.style.display = 'flex';
   } else {
     bouncing.stop();
     currentMode = archery;
     archery.start();
-    btnToggleMode.textContent = '🔄 Modo: Arquería';
-    
-    // Switch tabs to sparks
+    modeLabel.textContent = 'SHARDS';
+
     switchTab('tab-sparks');
-    tabChaosBtn.style.display = 'none'; // Hide chaos tab
+    tabChaosBtn.style.display = 'none';
   }
 });
 
 // Tabs Logic
 function switchTab(tabId) {
   tabBtns.forEach(btn => {
-    if (btn.dataset.tab === tabId) btn.classList.add('active');
-    else btn.classList.remove('active');
+    btn.classList.toggle('active', btn.dataset.tab === tabId);
   });
-  tabContents.forEach(content => {
-    if (content.id === tabId) content.classList.add('active');
-    else content.classList.remove('active');
+  tabPanels.forEach(panel => {
+    panel.classList.toggle('active', panel.id === tabId);
   });
 }
 
 tabBtns.forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    switchTab(e.target.dataset.tab);
+  btn.addEventListener('click', () => {
+    switchTab(btn.dataset.tab);
   });
 });
 
 // Archery Upgrades UI
-const btnAddSpark = document.getElementById('btn-add-spark');
-const btnUpgSpark = document.getElementById('btn-upg-spark');
-const btnMergeSpark = document.getElementById('btn-merge-spark');
 const statDmg = document.getElementById('stat-dmg');
 const statCount = document.getElementById('stat-count');
 const costSparkEl = document.getElementById('cost-spark');
@@ -83,11 +85,11 @@ let upgCost = 20;
 function updateArcheryUI() {
   statDmg.textContent = archery.damage.toFixed(1);
   statCount.textContent = archery.arrows.length;
-  costSparkEl.textContent = sparkCost;
-  costUpgSparkEl.textContent = upgCost;
+  costSparkEl.textContent = formatNumber(sparkCost);
+  costUpgSparkEl.textContent = formatNumber(upgCost);
 }
 
-btnAddSpark.addEventListener('click', () => {
+document.getElementById('btn-add-spark').addEventListener('click', () => {
   if (currency >= sparkCost) {
     updateCurrency(-sparkCost);
     archery.addArrow();
@@ -96,7 +98,7 @@ btnAddSpark.addEventListener('click', () => {
   }
 });
 
-btnUpgSpark.addEventListener('click', () => {
+document.getElementById('btn-upg-spark').addEventListener('click', () => {
   if (currency >= upgCost) {
     updateCurrency(-upgCost);
     archery.damage *= 1.2;
@@ -105,9 +107,8 @@ btnUpgSpark.addEventListener('click', () => {
   }
 });
 
-btnMergeSpark.addEventListener('click', () => {
+document.getElementById('btn-merge-spark').addEventListener('click', () => {
   if (archery.arrows.length >= 2) {
-    // Remove 2 arrows, add 1 with double damage/size (simplification: just multiply global damage for now)
     archery.arrows.pop();
     archery.damage *= 2;
     updateArcheryUI();
@@ -115,48 +116,43 @@ btnMergeSpark.addEventListener('click', () => {
 });
 
 // Bouncing Mode UI
-const btnAddBall = document.getElementById('btn-add-ball');
-const btnClearBalls = document.getElementById('btn-clear-balls');
-const toggleGravity = document.getElementById('toggle-gravity');
-const toggleCollision = document.getElementById('toggle-collision');
 const ballCountEl = document.getElementById('ball-count');
 
-btnAddBall.addEventListener('click', () => {
+document.getElementById('btn-add-ball').addEventListener('click', () => {
   bouncing.addBall();
   ballCountEl.textContent = bouncing.balls.length;
 });
 
-btnClearBalls.addEventListener('click', () => {
+document.getElementById('btn-clear-balls').addEventListener('click', () => {
   bouncing.clearBalls();
   ballCountEl.textContent = 0;
 });
 
-toggleGravity.addEventListener('change', (e) => {
+document.getElementById('toggle-gravity').addEventListener('change', (e) => {
   bouncing.setGravity(e.target.checked);
 });
 
-toggleCollision.addEventListener('change', (e) => {
+document.getElementById('toggle-collision').addEventListener('change', (e) => {
   bouncing.setCollision(e.target.checked);
 });
-
 
 // Game Loop
 let lastTime = 0;
 function gameLoop(time) {
   const dt = time - lastTime;
   lastTime = time;
-  
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
   if (currentMode) {
     currentMode.update(dt, time);
     currentMode.draw();
   }
-  
+
   animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-// Start Game
+// Start
 archery.start();
 updateArcheryUI();
 animationFrameId = requestAnimationFrame(gameLoop);

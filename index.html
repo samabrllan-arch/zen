@@ -4,65 +4,95 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="./public/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Zen Shards Clone</title>
+    <meta name="theme-color" content="#0c0c14" />
+    <title>Zen Shards</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
     <div id="app">
-      
-      <!-- Top Half: Game Canvas -->
+
+      <!-- ═══════ GAME AREA (Top) ═══════ -->
       <div id="game-container">
-        <!-- Mode Switcher (Floating Top Left) -->
-        <button id="btn-toggle-mode" class="floating-btn">🔄 Modo: Arquería</button>
-        <!-- Score / Currency (Floating Top Right) -->
-        <div id="score-display">
-          <span id="currency">0</span> 💎
-        </div>
-        
         <canvas id="gameCanvas"></canvas>
+
+        <!-- HUD Overlay -->
+        <div class="hud">
+          <button id="btn-toggle-mode" class="hud-pill">
+            <span class="pill-dot"></span>
+            <span id="mode-label">SHARDS</span>
+          </button>
+          <div class="hud-currency">
+            <span class="currency-icon">◆</span>
+            <span id="currency" class="currency-value">0</span>
+          </div>
+        </div>
+
+        <!-- Vignette overlay for depth -->
+        <div class="vignette"></div>
       </div>
 
-      <!-- Bottom Half: UI Panels -->
+      <!-- ═══════ UI PANEL (Bottom) ═══════ -->
       <div id="ui-container">
-        
-        <!-- Tabs Header -->
-        <div class="tabs-header">
-          <button class="tab-btn active" data-tab="tab-sparks">SPARKS</button>
-          <button class="tab-btn" data-tab="tab-upgrades">UPGRADES</button>
-          <button class="tab-btn" data-tab="tab-chaos" id="tab-chaos-btn" style="display:none;">CAOS</button>
-        </div>
 
-        <!-- Tab Content: Sparks (Archery Mode) -->
-        <div id="tab-sparks" class="tab-content active">
-          <div class="cards-grid">
-            
-            <!-- Card 1: Add Spark -->
-            <div class="upgrade-card">
-              <div class="card-icon">➤</div>
-              <div class="card-info">
-                <div class="card-title">SPARK</div>
-                <div class="card-desc">Daño: <span id="stat-dmg">1.0</span></div>
+        <!-- Tab Bar -->
+        <nav class="tab-bar">
+          <button class="tab active" data-tab="tab-sparks">
+            <span class="tab-icon">⚡</span>
+            <span class="tab-label">Sparks</span>
+          </button>
+          <button class="tab" data-tab="tab-upgrades">
+            <span class="tab-icon">⬆</span>
+            <span class="tab-label">Upgrades</span>
+          </button>
+          <button class="tab" data-tab="tab-chaos" id="tab-chaos-btn" style="display:none;">
+            <span class="tab-icon">◉</span>
+            <span class="tab-label">Chaos</span>
+          </button>
+        </nav>
+
+        <!-- ─── Tab: Sparks ─── -->
+        <div id="tab-sparks" class="tab-panel active">
+          <div class="card-list">
+
+            <div class="card">
+              <div class="card-left">
+                <div class="card-icon-wrap spark-glow">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
+                <div class="card-meta">
+                  <span class="card-name">Spark</span>
+                  <span class="card-stat">DMG <strong id="stat-dmg">1.0</strong></span>
+                </div>
               </div>
-              <div class="card-actions">
-                <button id="btn-add-spark" class="action-btn primary">
-                  +1<br><small><span id="cost-spark">10</span> 💎</small>
+              <div class="card-right">
+                <button id="btn-add-spark" class="btn-buy">
+                  <span class="btn-label">+1</span>
+                  <span class="btn-cost"><span id="cost-spark">10</span> ◆</span>
                 </button>
-                <button id="btn-upg-spark" class="action-btn secondary">
-                  Lvl Up<br><small><span id="cost-upg-spark">20</span> 💎</small>
+                <button id="btn-upg-spark" class="btn-buy accent">
+                  <span class="btn-label">LVL UP</span>
+                  <span class="btn-cost"><span id="cost-upg-spark">20</span> ◆</span>
                 </button>
               </div>
             </div>
 
-            <!-- Card 2: Merge Sparks -->
-            <div class="upgrade-card">
-              <div class="card-icon merge-icon">⪢</div>
-              <div class="card-info">
-                <div class="card-title">MERGE</div>
-                <div class="card-desc">Sparks: <span id="stat-count">1</span></div>
+            <div class="card">
+              <div class="card-left">
+                <div class="card-icon-wrap merge-glow">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                </div>
+                <div class="card-meta">
+                  <span class="card-name">Merge</span>
+                  <span class="card-stat">Sparks: <strong id="stat-count">1</strong></span>
+                </div>
               </div>
-              <div class="card-actions">
-                <button id="btn-merge-spark" class="action-btn primary full-width">
-                  Fusionar<br><small>Requiere 2 Sparks</small>
+              <div class="card-right">
+                <button id="btn-merge-spark" class="btn-buy wide">
+                  <span class="btn-label">FUSE</span>
+                  <span class="btn-cost">Needs 2</span>
                 </button>
               </div>
             </div>
@@ -70,60 +100,72 @@
           </div>
         </div>
 
-        <!-- Tab Content: Upgrades (Archery Mode) -->
-        <div id="tab-upgrades" class="tab-content">
-          <div class="cards-grid">
-            <!-- Add future global upgrades here -->
-            <div class="upgrade-card">
-              <div class="card-info">
-                <div class="card-title">SPAWN RATE</div>
-                <div class="card-desc">Polígonos más rápidos</div>
+        <!-- ─── Tab: Upgrades ─── -->
+        <div id="tab-upgrades" class="tab-panel">
+          <div class="card-list">
+            <div class="card locked">
+              <div class="card-left">
+                <div class="card-icon-wrap">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="card-meta">
+                  <span class="card-name">Spawn Rate</span>
+                  <span class="card-stat">Coming Soon</span>
+                </div>
               </div>
-              <div class="card-actions">
-                <button class="action-btn secondary disabled">Próximamente</button>
+              <div class="card-right">
+                <button class="btn-buy disabled">
+                  <span class="btn-label">🔒</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Tab Content: Chaos Controls (Bouncing Mode) -->
-        <div id="tab-chaos" class="tab-content">
-          <div class="cards-grid">
-            
-            <!-- Card: Add Ball -->
-            <div class="upgrade-card">
-              <div class="card-icon">🔵</div>
-              <div class="card-info">
-                <div class="card-title">AGREGAR PELOTA</div>
-                <div class="card-desc">Pelotas: <span id="ball-count">0</span></div>
+        <!-- ─── Tab: Chaos ─── -->
+        <div id="tab-chaos" class="tab-panel">
+          <div class="card-list">
+
+            <div class="card">
+              <div class="card-left">
+                <div class="card-icon-wrap chaos-glow">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+                </div>
+                <div class="card-meta">
+                  <span class="card-name">Add Ball</span>
+                  <span class="card-stat">Balls: <strong id="ball-count">0</strong></span>
+                </div>
               </div>
-              <div class="card-actions">
-                <button id="btn-add-ball" class="action-btn primary full-width">+ Añadir</button>
+              <div class="card-right">
+                <button id="btn-add-ball" class="btn-buy wide">
+                  <span class="btn-label">+ ADD</span>
+                </button>
               </div>
             </div>
 
-            <!-- Card: Toggles -->
-            <div class="upgrade-card">
-              <div class="card-info" style="width: 100%;">
-                <div class="toggle-row">
-                  <span>Gravedad</span>
-                  <label class="switch">
-                    <input type="checkbox" id="toggle-gravity" checked>
-                    <span class="slider round"></span>
-                  </label>
-                </div>
-                <div class="toggle-row">
-                  <span>Colisiones</span>
-                  <label class="switch">
-                    <input type="checkbox" id="toggle-collision">
-                    <span class="slider round"></span>
-                  </label>
+            <div class="card">
+              <div class="card-left full">
+                <div class="toggle-group">
+                  <div class="toggle-item">
+                    <span>Gravity</span>
+                    <label class="switch">
+                      <input type="checkbox" id="toggle-gravity" checked>
+                      <span class="switch-track"><span class="switch-thumb"></span></span>
+                    </label>
+                  </div>
+                  <div class="toggle-item">
+                    <span>Collisions</span>
+                    <label class="switch">
+                      <input type="checkbox" id="toggle-collision">
+                      <span class="switch-track"><span class="switch-thumb"></span></span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="upgrade-card">
-              <button id="btn-clear-balls" class="action-btn danger full-width" style="height: 100%;">Limpiar Todo</button>
+            <div class="card">
+              <button id="btn-clear-balls" class="btn-danger-full">Clear All</button>
             </div>
 
           </div>

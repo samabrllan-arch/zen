@@ -154,30 +154,54 @@ export class ArcheryMode {
   draw() {
     if (!this.isActive) return;
     
-    // Draw targets
+    // Draw targets with subtle glow
     for (const t of this.targets) {
-      this.ctx.globalAlpha = 0.8;
+      // Outer glow
+      this.ctx.save();
+      this.ctx.shadowColor = t.color;
+      this.ctx.shadowBlur = 12;
+      this.ctx.globalAlpha = 0.5;
+      drawPolygon(this.ctx, t.x, t.y, t.radius, t.sides, t.color, t.rotation);
+      this.ctx.restore();
+      
+      // Solid shape
+      this.ctx.globalAlpha = 0.85;
       drawPolygon(this.ctx, t.x, t.y, t.radius, t.sides, t.color, t.rotation);
       this.ctx.globalAlpha = 1.0;
       
-      // Health bar (very small)
-      this.ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      this.ctx.fillRect(t.x - 10, t.y + t.radius + 2, 20, 2);
+      // Health bar
+      const barW = t.radius * 1.2;
+      this.ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      this.ctx.fillRect(t.x - barW / 2, t.y + t.radius + 4, barW, 2);
       this.ctx.fillStyle = '#34d399';
-      this.ctx.fillRect(t.x - 10, t.y + t.radius + 2, 20 * Math.max(0, t.hp / t.maxHp), 2);
+      this.ctx.fillRect(t.x - barW / 2, t.y + t.radius + 4, barW * Math.max(0, t.hp / t.maxHp), 2);
     }
     
-    // Draw arrows (Sparks)
+    // Draw arrows (Sparks) with glow trail
     for (const a of this.arrows) {
-      drawArrow(this.ctx, a.x, a.y, a.angle, 12, a.color);
+      // Trail
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.15;
+      this.ctx.fillStyle = a.color;
+      this.ctx.beginPath();
+      this.ctx.arc(a.x - a.vx * 2, a.y - a.vy * 2, 3, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
+      
+      // Spark glow
+      this.ctx.save();
+      this.ctx.shadowColor = a.color;
+      this.ctx.shadowBlur = 8;
+      drawArrow(this.ctx, a.x, a.y, a.angle, 14, a.color);
+      this.ctx.restore();
     }
     
     // Draw particles
     for (const p of this.particles) {
       this.ctx.fillStyle = p.color;
-      this.ctx.globalAlpha = p.life;
+      this.ctx.globalAlpha = p.life * 0.8;
       this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+      this.ctx.arc(p.x, p.y, 2 * p.life, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.globalAlpha = 1.0;
     }

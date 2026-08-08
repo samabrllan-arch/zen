@@ -103,12 +103,26 @@ export class BouncingMode {
   draw() {
     if (!this.isActive) return;
     
-    // Draw boundary
-    drawCircle(this.ctx, this.center.x, this.center.y, this.boundaryRadius, 'rgba(255,255,255,0.1)', true, 3);
+    // Draw boundary with subtle gradient
+    this.ctx.beginPath();
+    this.ctx.arc(this.center.x, this.center.y, this.boundaryRadius, 0, Math.PI * 2);
+    this.ctx.strokeStyle = 'rgba(108, 99, 255, 0.12)';
+    this.ctx.lineWidth = 2;
+    this.ctx.stroke();
     
-    // Draw balls
+    // Draw balls with glow
     for (const b of this.balls) {
+      // Glow
+      this.ctx.save();
+      this.ctx.shadowColor = b.color;
+      this.ctx.shadowBlur = 14;
       drawCircle(this.ctx, b.x, b.y, b.radius, b.color);
+      this.ctx.restore();
+      
+      // Inner highlight
+      this.ctx.globalAlpha = 0.35;
+      drawCircle(this.ctx, b.x - b.radius * 0.2, b.y - b.radius * 0.25, b.radius * 0.4, 'white');
+      this.ctx.globalAlpha = 1.0;
     }
   }
 }
