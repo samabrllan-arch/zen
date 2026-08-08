@@ -148,10 +148,12 @@ body {
 #game-container {
   position: relative;
   z-index: 1;
-  flex: 0 0 48%;
+  flex: 1;
+  width: 100%;
   background: var(--canvas-bg);
   overflow: hidden;
   transition: background 0.4s ease;
+  cursor: crosshair;
 }
 
 #gameCanvas {
@@ -206,11 +208,15 @@ body {
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
+/* ═══ HUD & FLOATING BUTTONS ═══ */
 .hud {
   position: absolute;
-  top: 12px;
-  right: 14px;
+  top: 14px;
+  right: 16px;
   z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .hud-badge {
@@ -245,122 +251,126 @@ body {
   animation: hudPulse 2.4s ease-in-out infinite;
 }
 
-@keyframes hudPulse {
-
-  0%,
-  100% {
-    opacity: 0.5;
-    transform: scale(0.85);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+.floating-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
-/* ═══ UI CONTAINER ═══ */
-#ui-container {
-  position: relative;
-  z-index: 1;
-  flex: 1;
+.floating-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.floating-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+}
+
+.floating-btn:active {
+  transform: scale(0.92);
+}
+
+@keyframes hudPulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* ═══ MODAL OVERLAY ═══ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  padding: 20px;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-content {
   background: var(--bg-surface-glass);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  overflow: hidden;
-  transition: background 0.4s ease;
-}
-
-#ui-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  z-index: 2;
-  background: linear-gradient(90deg, transparent, var(--accent-soft) 25%, var(--jade-soft) 75%, transparent);
-}
-
-/* ─── Tab Bar (segmented glass control) ─── */
-.tab-bar {
-  display: flex;
-  gap: 4px;
-  margin: 14px 14px 6px;
-  padding: 4px;
-  background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  flex-shrink: 0;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  transform: translateY(0) scale(1);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.tab {
-  flex: 1;
+.modal-overlay.hidden .modal-content {
+  transform: translateY(20px) scale(0.96);
+}
+
+.modal-header {
   display: flex;
-  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 9px 0;
-  background: none;
-  border: none;
-  border-radius: 10px;
-  color: var(--text-3);
-  font-family: inherit;
-  cursor: pointer;
-  transition: color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
-.tab.active {
-  color: var(--text-1);
-  background: linear-gradient(135deg, var(--accent-soft), rgba(255, 255, 255, 0.02));
-  box-shadow: inset 0 0 0 1px var(--accent-soft), 0 2px 10px rgba(0, 0, 0, 0.12);
-}
-
-.tab.active .tab-icon {
-  color: var(--accent);
-}
-
-.tab-icon {
-  display: flex;
-}
-
-.tab-icon svg {
-  width: 15px;
-  height: 15px;
-  display: block;
-}
-
-.tab-label {
-  font-size: 0.64rem;
+.modal-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
   font-weight: 600;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+  color: var(--text-1);
 }
 
-/* ─── Tab Panel ─── */
-.tab-panel {
-  display: none;
-  flex: 1;
-  padding: 10px 16px 18px;
+.modal-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--btn-ghost-bg);
+  border: none;
+}
+.modal-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.modal-body {
+  padding: 20px;
   overflow-y: auto;
   overflow-x: hidden;
 }
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
 
-.tab-panel.active {
-  display: block;
-}
-
-.tab-panel::-webkit-scrollbar {
-  width: 3px;
-}
-
-.tab-panel::-webkit-scrollbar-thumb {
-  background: var(--text-3);
-  border-radius: 10px;
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
 }
 
 /* ═══ CONTROLS ═══ */
@@ -592,7 +602,7 @@ input:checked+.track .thumb {
   gap: 8px;
 }
 
-.palette-btn {
+.palette-btn, .effect-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -617,7 +627,7 @@ input:checked+.track .thumb {
   transition: transform 0.2s;
 }
 
-.palette-btn.active {
+.palette-btn.active, .effect-btn.active {
   border-color: var(--accent);
   color: var(--text-1);
   background: var(--accent-soft);

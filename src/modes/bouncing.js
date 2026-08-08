@@ -15,7 +15,11 @@ export class BouncingMode {
     this.canvas = canvas;
     this.ctx = ctx;
     this.balls = [];
+    this.particles = []; // For collision effects
+    this.flashAlpha = 0; // For global flash effect
+    
     this.isActive = false;
+    this.isPaused = false;
 
     // Physics
     this.useGravity = true;
@@ -27,14 +31,18 @@ export class BouncingMode {
     this.sizeMin = 8;
     this.sizeMax = 18;
 
-    // Disappear
+    // Probabilities & Disappear
+    this.spawnProbability = 0; // 0 to 1 (per frame)
     this.disappearOnBounce = false;
+    this.disappearProbability = 0.2; // 20%
     this.maxBounces = 5;
 
     // Visual
     this.palette = 'neon';
     this.showTrail = false;
     this.glowIntensity = 12;
+    this.borderThickness = 1.5;
+    this.collisionEffect = 'none'; // 'none', 'particles', 'flash'
 
     // Derived
     this.boundaryRadius = 0;
@@ -47,20 +55,38 @@ export class BouncingMode {
   }
 
   stop() { this.isActive = false; }
+  
+  togglePause() { this.isPaused = !this.isPaused; }
 
   updateBounds() {
     this.center = { x: this.canvas.width / 2, y: this.canvas.height / 2 };
-    this.boundaryRadius = Math.min(this.canvas.width, this.canvas.height) / 2 - 16;
+    // Leave some padding so it looks nice full screen
+    this.boundaryRadius = Math.min(this.canvas.width, this.canvas.height) / 2 - 20;
   }
 
-  addBall() {
+  addBall(x = null, y = null) {
     this.updateBounds();
     const angle = Math.random() * Math.PI * 2;
     const radius = this.sizeMin + Math.random() * (this.sizeMax - this.sizeMin);
     const colorFn = COLOR_PALETTES[this.palette] || COLOR_PALETTES.neon;
+    
+    let spawnX = x !== null ? x : this.center.x;
+    let spawnY = y !== null ? y : (this.center.y - this.boundaryRadius * 0.3);
+    
+    // Ensure spawn position is inside boundary
+    if (x !== null && y !== null) {
+      const d = distance(spawnX, spawnY, this.center.x, this.center.y);
+      if (d + radius > this.boundaryRadius) {
+         // Push inside
+         const overlap = (d + radius) - this.boundaryRadius;
+         spawnX -= ((spawnX - this.center.x) / d) * overlap;
+         spawnY -= ((spawnY - this.center.y) / d) * overlap;
+      }
+    }
+
     this.balls.push({
-      x: this.center.x,
-      y: this.center.y - this.boundaryRadius * 0.3,
+      x: spawnX,
+      y: spawnY,
       vx: Math.cos(angle) * this.initialSpeed,
       vy: Math.sin(angle) * this.initialSpeed,
       radius,
@@ -72,7 +98,7 @@ export class BouncingMode {
     });
   }
 
-  clearBalls() { this.balls = []; }
+  clearBalls() { this.balls = []; this.particles = []; }
 
   setGravity(on) { this.useGravity = on; }
   setGravityVal(v) { this.gravityVal = v; }
@@ -80,15 +106,62 @@ export class BouncingMode {
   setSpeed(v) { this.initialSpeed = v; }
   setSizeMin(v) { this.sizeMin = v; }
   setSizeMax(v) { this.sizeMax = v; }
+  
+  setSpawnProb(v) { this.spawnProbability = v; }
   setDisappear(on) { this.disappearOnBounce = on; }
+  setDisappearProb(v) { this.disappearProbability = v; }
   setMaxBounces(v) { this.maxBounces = v; }
+  
   setPalette(p) { this.palette = p; }
   setTrail(on) { this.showTrail = on; }
   setGlow(v) { this.glowIntensity = v; }
+  setBorderThickness(v) { this.borderThickness = v; }
+  setCollisionEffect(e) { this.collisionEffect = e; }
+  
+  spawnParticles(x, y, color) {
+    const count = 6 + Math.random() * 6;
+    for(let i=0; i<count; i++) {
+       const angle = Math.random() * Math.PI * 2;
+       const spd = 1 + Math.random() * 4;
+       this.particles.push({
+         x, y,
+         vx: Math.cos(angle) * spd,
+         vy: Math.sin(angle) * spd,
+         radius: 1.5 + Math.random() * 2,
+         color,
+         alpha: 1,
+         decay: 0.02 + Math.random() * 0.03
+       });
+    }
+  }
 
   update() {
-    if (!this.isActive) return;
+    if (!this.isActive || this.isPaused) return;
     this.updateBounds();
+    
+    // Spontaneous Spawn
+    if (this.spawnProbability > 0 && Math.random() < this.spawnProbability && this.balls.length < 150) {
+       // Spawn somewhere random inside the circle
+       const angle = Math.random() * Math.PI * 2;
+       const r = Math.random() * (this.boundaryRadius - this.sizeMax - 5);
+       this.addBall(this.center.x + Math.cos(angle) * r, this.center.y + Math.sin(angle) * r);
+    }
+    
+    // Fade flash
+    if (this.flashAlpha > 0) {
+      this.flashAlpha -= 0.05;
+    }
+
+    // Update Particles
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.alpha -= p.decay;
+      if (p.alpha <= 0) {
+        this.particles.splice(i, 1);
+      }
+    }
 
     for (let i = this.balls.length - 1; i >= 0; i--) {
       const b = this.balls[i];
@@ -121,12 +194,16 @@ export class BouncingMode {
 
         b.bounces++;
 
-        if (this.disappearOnBounce && b.bounces >= this.maxBounces) {
-          b.alpha -= 0.15;
-          if (b.alpha <= 0) {
-            this.balls.splice(i, 1);
-            continue;
-          }
+        if (this.disappearOnBounce) {
+           // Base logic: max bounces OR random chance on each bounce
+           const chanceHit = Math.random() < this.disappearProbability;
+           if (b.bounces >= this.maxBounces || chanceHit) {
+              b.alpha -= 0.15;
+              if (b.alpha <= 0) {
+                this.balls.splice(i, 1);
+                continue;
+              }
+           }
         }
       }
 
@@ -135,6 +212,15 @@ export class BouncingMode {
         for (let j = i + 1; j < this.balls.length; j++) {
           if (circleCollision(b, this.balls[j])) {
             resolveCollision(b, this.balls[j]);
+            
+            // Collision effects
+            if (this.collisionEffect === 'particles') {
+               const midX = (b.x + this.balls[j].x) / 2;
+               const midY = (b.y + this.balls[j].y) / 2;
+               this.spawnParticles(midX, midY, b.color);
+            } else if (this.collisionEffect === 'flash') {
+               this.flashAlpha = 0.3;
+            }
           }
         }
       }
@@ -157,6 +243,12 @@ export class BouncingMode {
     const ctx = this.ctx;
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
 
+    // Global Flash Effect
+    if (this.flashAlpha > 0) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${this.flashAlpha})`;
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
     // Boundary — a slow-breathing ember-to-jade halo, like a meditation ring
     const t = Date.now() / 6000;
     const gx1 = this.center.x + Math.cos(t) * this.boundaryRadius;
@@ -172,11 +264,18 @@ export class BouncingMode {
     ctx.beginPath();
     ctx.arc(this.center.x, this.center.y, this.boundaryRadius, 0, Math.PI * 2);
     ctx.strokeStyle = ringGrad;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = this.borderThickness;
     ctx.shadowColor = isDark ? 'rgba(255,138,92,0.25)' : 'rgba(217,98,47,0.2)';
-    ctx.shadowBlur = 14;
+    ctx.shadowBlur = 14 * (this.borderThickness / 1.5); // scale blur a bit with thickness
     ctx.stroke();
     ctx.restore();
+
+    // Draw Particles
+    for (const p of this.particles) {
+       ctx.globalAlpha = p.alpha;
+       drawCircle(ctx, p.x, p.y, p.radius, p.color);
+    }
+    ctx.globalAlpha = 1;
 
     // Balls
     for (const b of this.balls) {
@@ -186,7 +285,6 @@ export class BouncingMode {
           const p = b.trail[ti];
           const a = (ti / b.trail.length) * 0.25 * b.alpha;
           ctx.globalAlpha = a;
-          ctx.fillStyle = b.color;
           drawCircle(ctx, p.x, p.y, b.radius * 0.6, b.color);
         }
         ctx.globalAlpha = 1;

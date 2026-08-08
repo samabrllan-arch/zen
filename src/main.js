@@ -15,18 +15,48 @@ function updateCounter() {
   ballCounter.textContent = `${engine.balls.length} ball${engine.balls.length !== 1 ? 's' : ''}`;
 }
 
-// ═══ TAB LOGIC ═══
-const tabs = document.querySelectorAll('.tab');
-const panels = document.querySelectorAll('.tab-panel');
-
-tabs.forEach(t => {
-  t.addEventListener('click', () => {
-    tabs.forEach(b => b.classList.toggle('active', b === t));
-    panels.forEach(p => p.classList.toggle('active', p.id === t.dataset.tab));
-  });
+// ═══ INTERACTION ═══
+// Click to spawn ball
+canvas.addEventListener('pointerdown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  // Adjust for device pixel ratio if needed, setupCanvas usually handles width/height via CSS
+  // but assuming coordinates are 1:1 with canvas size:
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+  
+  engine.addBall(x, y);
+  updateCounter();
 });
 
-// ═══ CONTROLS TAB ═══
+// Pause Button
+const btnPause = document.getElementById('btn-pause');
+btnPause.addEventListener('click', () => {
+  engine.togglePause();
+  if (engine.isPaused) {
+    btnPause.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+  } else {
+    btnPause.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" /><rect x="14" y="5" width="4" height="14" /></svg>`;
+  }
+});
+
+// Modal UI
+const modalOverlay = document.getElementById('modal-overlay');
+document.getElementById('btn-settings').addEventListener('click', () => {
+  modalOverlay.classList.remove('hidden');
+});
+document.getElementById('btn-close-modal').addEventListener('click', () => {
+  modalOverlay.classList.add('hidden');
+});
+modalOverlay.addEventListener('mousedown', (e) => {
+  if (e.target === modalOverlay) {
+    modalOverlay.classList.add('hidden');
+  }
+});
+
+// ═══ CONTROLS ═══
 document.getElementById('btn-add').addEventListener('click', () => {
   engine.addBall();
   updateCounter();
@@ -37,7 +67,7 @@ document.getElementById('btn-clear').addEventListener('click', () => {
   updateCounter();
 });
 
-// Gravity toggle + slider
+// Gravity
 const gravToggle = document.getElementById('opt-gravity');
 const gravSlider = document.getElementById('opt-gravity-val');
 const gravLabel = document.getElementById('gravity-val-label');
@@ -54,25 +84,54 @@ gravSlider.addEventListener('input', () => {
   gravLabel.textContent = v.toFixed(2);
 });
 
-// Collision
+// Collision & Effects
 document.getElementById('opt-collision').addEventListener('change', (e) => {
   engine.setCollision(e.target.checked);
 });
 
+const effectBtns = document.querySelectorAll('.effect-btn');
+effectBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    effectBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    engine.setCollisionEffect(btn.dataset.effect);
+  });
+});
+
 // Disappear
 const disappearToggle = document.getElementById('opt-disappear');
+const bouncesMaxRow = document.getElementById('bounces-max-row');
 const bouncesRow = document.getElementById('bounces-row');
+
 const bouncesSlider = document.getElementById('opt-bounces');
 const bouncesLabel = document.getElementById('bounces-label');
+const disappearProbSlider = document.getElementById('opt-disappear-prob');
+const disappearProbLabel = document.getElementById('disappear-prob-label');
 
 disappearToggle.addEventListener('change', () => {
   engine.setDisappear(disappearToggle.checked);
+  bouncesMaxRow.classList.toggle('hidden', !disappearToggle.checked);
   bouncesRow.classList.toggle('hidden', !disappearToggle.checked);
 });
 
 bouncesSlider.addEventListener('input', () => {
   engine.setMaxBounces(parseInt(bouncesSlider.value));
   bouncesLabel.textContent = bouncesSlider.value;
+});
+
+disappearProbSlider.addEventListener('input', () => {
+  const prob = parseInt(disappearProbSlider.value);
+  engine.setDisappearProb(prob / 100);
+  disappearProbLabel.textContent = prob + '%';
+});
+
+// Spawn Prob
+const spawnProbSlider = document.getElementById('opt-spawn-prob');
+const spawnProbLabel = document.getElementById('spawn-prob-label');
+spawnProbSlider.addEventListener('input', () => {
+  const prob = parseInt(spawnProbSlider.value);
+  engine.setSpawnProb(prob / 1000); // Scale down so 100% isn't chaotic
+  spawnProbLabel.textContent = prob + '%';
 });
 
 // Speed
@@ -98,15 +157,13 @@ sizeMaxSlider.addEventListener('input', () => {
   sizeMaxLabel.textContent = sizeMaxSlider.value;
 });
 
-// ═══ STYLE TAB ═══
-// Dark mode
+// ═══ STYLE ═══
 document.getElementById('opt-darkmode').addEventListener('change', (e) => {
   document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
   document.querySelector('meta[name="theme-color"]')
-    .setAttribute('content', e.target.checked ? '#08080f' : '#f0f0f5');
+    .setAttribute('content', e.target.checked ? '#0a0a0d' : '#e7eae6');
 });
 
-// Palette
 const paletteBtns = document.querySelectorAll('.palette-btn');
 paletteBtns.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -116,17 +173,22 @@ paletteBtns.forEach(btn => {
   });
 });
 
-// Trail
 document.getElementById('opt-trail').addEventListener('change', (e) => {
   engine.setTrail(e.target.checked);
 });
 
-// Glow
 const glowSlider = document.getElementById('opt-glow');
 const glowLabel = document.getElementById('glow-label');
 glowSlider.addEventListener('input', () => {
   engine.setGlow(parseInt(glowSlider.value));
   glowLabel.textContent = glowSlider.value;
+});
+
+const borderThickSlider = document.getElementById('opt-border-thick');
+const borderThickLabel = document.getElementById('border-thick-label');
+borderThickSlider.addEventListener('input', () => {
+  engine.setBorderThickness(parseFloat(borderThickSlider.value));
+  borderThickLabel.textContent = borderThickSlider.value;
 });
 
 // ═══ RANDOM MODE ═══
@@ -135,92 +197,95 @@ const randomStatus = document.getElementById('random-status');
 const randomSpeedSlider = document.getElementById('opt-random-speed');
 
 let randomInterval = null;
-let spawnInterval = null;
 
 function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 function randomizeSettings() {
+  // We simulate inputs on the UI so it stays in sync
+  
   // Gravity
   const grav = Math.random() > 0.3;
-  engine.setGravity(grav);
   gravToggle.checked = grav;
+  gravToggle.dispatchEvent(new Event('change'));
   if (grav) {
-    const gv = Math.random() * 0.8;
-    engine.setGravityVal(gv);
-    gravSlider.value = gv * 100;
-    gravLabel.textContent = gv.toFixed(2);
+    gravSlider.value = getRandomInt(10, 80);
+    gravSlider.dispatchEvent(new Event('input'));
   }
 
   // Collision
   const col = Math.random() > 0.5;
-  engine.setCollision(col);
-  document.getElementById('opt-collision').checked = col;
+  const colToggle = document.getElementById('opt-collision');
+  colToggle.checked = col;
+  colToggle.dispatchEvent(new Event('change'));
 
   // Speed
-  const spd = getRandomInt(2, 15);
-  engine.setSpeed(spd);
-  speedSlider.value = spd;
-  speedLabel.textContent = spd;
+  speedSlider.value = getRandomInt(2, 15);
+  speedSlider.dispatchEvent(new Event('input'));
 
   // Size
   const sMin = getRandomInt(4, 20);
   const sMax = getRandomInt(sMin + 5, 60);
-  engine.setSizeMin(sMin);
-  engine.setSizeMax(sMax);
   sizeMinSlider.value = sMin;
   sizeMaxSlider.value = sMax;
-  sizeMinLabel.textContent = sMin;
-  sizeMaxLabel.textContent = sMax;
+  sizeMinSlider.dispatchEvent(new Event('input'));
+  sizeMaxSlider.dispatchEvent(new Event('input'));
 
   // Disappear
   const dis = Math.random() > 0.5;
-  engine.setDisappear(dis);
   disappearToggle.checked = dis;
+  disappearToggle.dispatchEvent(new Event('change'));
   if (dis) {
-    const bn = getRandomInt(2, 30);
-    engine.setMaxBounces(bn);
-    bouncesSlider.value = bn;
-    bouncesLabel.textContent = bn;
+    bouncesSlider.value = getRandomInt(2, 30);
+    bouncesSlider.dispatchEvent(new Event('input'));
+    
+    disappearProbSlider.value = getRandomInt(0, 100);
+    disappearProbSlider.dispatchEvent(new Event('input'));
   }
 
   // Trail
   const trail = Math.random() > 0.5;
-  engine.setTrail(trail);
-  document.getElementById('opt-trail').checked = trail;
+  const optTrail = document.getElementById('opt-trail');
+  optTrail.checked = trail;
+  optTrail.dispatchEvent(new Event('change'));
 
   // Glow
-  const glow = getRandomInt(0, 25);
-  engine.setGlow(glow);
-  glowSlider.value = glow;
-  glowLabel.textContent = glow;
+  glowSlider.value = getRandomInt(0, 25);
+  glowSlider.dispatchEvent(new Event('input'));
+  
+  // Border thickness
+  borderThickSlider.value = getRandomInt(1, 8);
+  borderThickSlider.dispatchEvent(new Event('input'));
 
   // Palette
   const palettes = ['neon', 'pastel', 'mono', 'rainbow', 'fire', 'ocean'];
   const pal = palettes[getRandomInt(0, palettes.length - 1)];
-  engine.setPalette(pal);
-  paletteBtns.forEach(b => b.classList.toggle('active', b.dataset.palette === pal));
+  const pBtn = document.querySelector(`.palette-btn[data-palette="${pal}"]`);
+  if(pBtn) pBtn.click();
+  
+  // Effect
+  const effects = ['none', 'particles', 'flash'];
+  const eff = effects[getRandomInt(0, effects.length - 1)];
+  const eBtn = document.querySelector(`.effect-btn[data-effect="${eff}"]`);
+  if(eBtn) eBtn.click();
 }
 
 function startRandom() {
   const speed = parseInt(randomSpeedSlider.value);
   const changeMs = Math.max(800, 5000 - speed * 400);
-  const spawnMs = Math.max(300, 1200 - speed * 80);
 
   randomizeSettings();
   randomInterval = setInterval(randomizeSettings, changeMs);
-  spawnInterval = setInterval(() => {
-    if (engine.balls.length < 80) {
-      engine.addBall();
-      updateCounter();
-    }
-  }, spawnMs);
+  
+  // Set spawn prob a bit high so it acts automatic
+  spawnProbSlider.value = 10;
+  spawnProbSlider.dispatchEvent(new Event('input'));
 }
 
 function stopRandom() {
   clearInterval(randomInterval);
-  clearInterval(spawnInterval);
   randomInterval = null;
-  spawnInterval = null;
+  spawnProbSlider.value = 0;
+  spawnProbSlider.dispatchEvent(new Event('input'));
 }
 
 randomToggle.addEventListener('change', () => {
@@ -245,7 +310,7 @@ function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   engine.update();
   engine.draw();
-  updateCounter();
+  if(!engine.isPaused) updateCounter();
   requestAnimationFrame(gameLoop);
 }
 
