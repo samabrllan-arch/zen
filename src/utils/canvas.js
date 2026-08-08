@@ -3,8 +3,14 @@ export function setupCanvas(canvasId) {
   const ctx = canvas.getContext('2d');
   
   function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const parent = canvas.parentElement;
+    if (parent) {
+      canvas.width = parent.clientWidth;
+      canvas.height = parent.clientHeight;
+    } else {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
   }
   
   window.addEventListener('resize', resize);
