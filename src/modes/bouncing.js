@@ -197,6 +197,16 @@ export class BouncingMode {
         }
       }
 
+      // Spontaneous disappear
+      if (this.disappearProbability > 0 && !b.isFading) {
+         // this.disappearProbability is between 0.0 and 1.0
+         // A 1.0 (100%) means approx 1% chance per frame (very fast)
+         const chance = this.disappearProbability * 0.01;
+         if (Math.random() < chance) {
+            b.isFading = true;
+         }
+      }
+
       // Boundary collision
       const d = distance(b.x, b.y, this.center.x, this.center.y);
       if (d + b.radius > this.boundaryRadius) {
@@ -212,8 +222,7 @@ export class BouncingMode {
         b.bounces++;
 
         if (this.disappearOnBounce && !b.isFading) {
-           const chanceHit = Math.random() < this.disappearProbability;
-           if (b.bounces >= this.maxBounces || chanceHit) {
+           if (b.bounces >= this.maxBounces) {
               b.isFading = true;
            }
         }
