@@ -2,12 +2,12 @@ import { drawCircle } from '../utils/canvas.js';
 import { resolveCollision, circleCollision, distance } from '../utils/physics.js';
 
 const COLOR_PALETTES = {
-  neon:    () => `hsl(${Math.random()*360}, 100%, 60%)`,
-  pastel:  () => `hsl(${Math.random()*360}, 70%, 80%)`,
-  mono:    () => `hsl(0, 0%, ${40 + Math.random()*50}%)`,
+  neon: () => `hsl(${Math.random() * 360}, 100%, 60%)`,
+  pastel: () => `hsl(${Math.random() * 360}, 70%, 80%)`,
+  mono: () => `hsl(0, 0%, ${40 + Math.random() * 50}%)`,
   rainbow: (() => { let h = 0; return () => { h = (h + 25) % 360; return `hsl(${h}, 85%, 60%)`; }; })(),
-  fire:    () => `hsl(${Math.random()*40}, 100%, ${45 + Math.random()*20}%)`,
-  ocean:   () => `hsl(${180 + Math.random()*60}, 80%, ${40 + Math.random()*30}%)`,
+  fire: () => `hsl(${Math.random() * 40}, 100%, ${45 + Math.random() * 20}%)`,
+  ocean: () => `hsl(${180 + Math.random() * 60}, 80%, ${40 + Math.random() * 30}%)`,
 };
 
 export class BouncingMode {
@@ -141,50 +141,81 @@ export class BouncingMode {
     }
   }
 
+  // Nudges an hsl(...) color string's lightness by `dl` percentage points,
+  // used to build a glossy highlight/shadow gradient from each ball's base hue.
+  _adjustHsl(hslStr, dl) {
+    const m = /hsl\(\s*([-\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)/.exec(hslStr);
+    if (!m) return hslStr;
+    const h = parseFloat(m[1]);
+    const s = parseFloat(m[2]);
+    const l = Math.max(0, Math.min(100, parseFloat(m[3]) + dl));
+    return `hsl(${h}, ${s}%, ${l}%)`;
+  }
+
   draw() {
     if (!this.isActive) return;
     const ctx = this.ctx;
     const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
 
-    // Boundary
+    // Boundary — a slow-breathing ember-to-jade halo, like a meditation ring
+    const t = Date.now() / 6000;
+    const gx1 = this.center.x + Math.cos(t) * this.boundaryRadius;
+    const gy1 = this.center.y + Math.sin(t) * this.boundaryRadius;
+    const gx2 = this.center.x - Math.cos(t) * this.boundaryRadius;
+    const gy2 = this.center.y - Math.sin(t) * this.boundaryRadius;
+    const ringGrad = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
+    ringGrad.addColorStop(0, isDark ? 'rgba(255,138,92,0.4)' : 'rgba(217,98,47,0.42)');
+    ringGrad.addColorStop(0.5, isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)');
+    ringGrad.addColorStop(1, isDark ? 'rgba(111,224,201,0.36)' : 'rgba(31,156,133,0.38)');
+
+    ctx.save();
     ctx.beginPath();
     ctx.arc(this.center.x, this.center.y, this.boundaryRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = isDark ? 'rgba(108,99,255,0.1)' : 'rgba(79,70,229,0.15)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = ringGrad;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = isDark ? 'rgba(255,138,92,0.25)' : 'rgba(217,98,47,0.2)';
+    ctx.shadowBlur = 14;
     ctx.stroke();
+    ctx.restore();
 
     // Balls
     for (const b of this.balls) {
       // Trail
       if (this.showTrail && b.trail.length > 1) {
-        for (let t = 0; t < b.trail.length; t++) {
-          const p = b.trail[t];
-          const a = (t / b.trail.length) * 0.25 * b.alpha;
+        for (let ti = 0; ti < b.trail.length; ti++) {
+          const p = b.trail[ti];
+          const a = (ti / b.trail.length) * 0.25 * b.alpha;
           ctx.globalAlpha = a;
           ctx.fillStyle = b.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, b.radius * 0.6, 0, Math.PI * 2);
-          ctx.fill();
+          drawCircle(ctx, p.x, p.y, b.radius * 0.6, b.color);
         }
         ctx.globalAlpha = 1;
       }
 
-      // Glow
+      // Glossy body: radial gradient from a lightened hotspot to a
+      // darkened rim, so each ball reads as a small glass/gel sphere.
+      ctx.save();
+      ctx.globalAlpha = b.alpha;
       if (this.glowIntensity > 0) {
-        ctx.save();
         ctx.shadowColor = b.color;
         ctx.shadowBlur = this.glowIntensity;
-        ctx.globalAlpha = b.alpha;
-        drawCircle(ctx, b.x, b.y, b.radius, b.color);
-        ctx.restore();
-      } else {
-        ctx.globalAlpha = b.alpha;
-        drawCircle(ctx, b.x, b.y, b.radius, b.color);
       }
+      const bodyGrad = ctx.createRadialGradient(
+        b.x - b.radius * 0.32, b.y - b.radius * 0.36, b.radius * 0.05,
+        b.x, b.y, b.radius
+      );
+      bodyGrad.addColorStop(0, this._adjustHsl(b.color, 22));
+      bodyGrad.addColorStop(0.6, b.color);
+      bodyGrad.addColorStop(1, this._adjustHsl(b.color, -16));
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+      ctx.fillStyle = bodyGrad;
+      ctx.fill();
+      ctx.restore();
 
-      // Inner highlight
-      ctx.globalAlpha = 0.3 * b.alpha;
-      drawCircle(ctx, b.x - b.radius * 0.22, b.y - b.radius * 0.28, b.radius * 0.35, 'white');
+      // Crisp specular highlight
+      ctx.globalAlpha = 0.55 * b.alpha;
+      drawCircle(ctx, b.x - b.radius * 0.28, b.y - b.radius * 0.32, b.radius * 0.22, 'rgba(255,255,255,0.95)');
       ctx.globalAlpha = 1;
     }
   }
