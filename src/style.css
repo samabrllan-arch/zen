@@ -150,10 +150,11 @@ body {
 
 /* ═══ GAME CONTAINER ═══ */
 #game-container {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  flex: 1;
   width: 100%;
+  height: 100%;
   background: var(--canvas-bg);
   overflow: hidden;
   transition: background 0.4s ease;
