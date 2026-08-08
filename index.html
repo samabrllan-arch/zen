@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/zen/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>zen</title>
+    <script type="module" crossorigin src="/zen/assets/index-Dr56Kp07.js"></script>
+    <link rel="stylesheet" crossorigin href="/zen/assets/index-pjgnK0jO.css">
+  <link rel="manifest" href="/zen/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/zen/registerSW.js"></script></head>
+  <body>
+    <div id="app">
+      <canvas id="gameCanvas"></canvas>
+      
+      <!-- Overlay UI -->
+      <div id="ui-layer">
+        <header>
+          <h1>Zen</h1>
+        </header>
+
+        <!-- Menu Principal -->
+        <div id="main-menu" class="screen active">
+          <p>Selecciona un modo para relajarte</p>
+          <div class="menu-buttons">
+            <button id="btn-archery" class="mode-btn">
+              <span class="icon">🏹</span>
+              Arquería Zen
+            </button>
+            <button id="btn-bounce" class="mode-btn">
+              <span class="icon">🔵</span>
+              Caos de Rebotes
+            </button>
+          </div>
+        </div>
+
+        <!-- Interfaz de Arquería -->
+        <div id="ui-archery" class="screen">
+          <div class="top-bar">
+            <button class="back-btn">← Volver</button>
+            <div class="score">Puntos: <span id="archery-score">0</span></div>
+          </div>
+          <div class="bottom-bar">
+            <button id="btn-upgrade-speed" class="upgrade-btn">
+              Más Rápido (<span id="cost-speed">10</span>p)
+            </button>
+            <button id="btn-upgrade-damage" class="upgrade-btn">
+              Más Daño (<span id="cost-damage">20</span>p)
+            </button>
+          </div>
+        </div>
+
+        <!-- Interfaz de Rebotes -->
+        <div id="ui-bounce" class="screen">
+          <div class="top-bar">
+            <button class="back-btn">← Volver</button>
+          </div>
+          <div class="bottom-bar controls">
+            <button id="btn-add-ball" class="action-btn">
+              + Agregar Pelota
+            </button>
+            <div class="slider-container">
+              <label for="speed-slider">Velocidad Inicial</label>
+              <input type="range" id="speed-slider" min="1" max="15" value="5">
+            </div>
+            <button id="btn-clear-balls" class="action-btn danger">
+              Limpiar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
