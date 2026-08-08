@@ -2,72 +2,136 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/zen/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>zen</title>
-    <script type="module" crossorigin src="/zen/assets/index-Dr56Kp07.js"></script>
-    <link rel="stylesheet" crossorigin href="/zen/assets/index-pjgnK0jO.css">
+    <link rel="icon" type="image/png" href="/zen/assets/favicon-jkSPDcJ2.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Zen Shards Clone</title>
+    <script type="module" crossorigin src="/zen/assets/index-pkCTMUgS.js"></script>
+    <link rel="stylesheet" crossorigin href="/zen/assets/index-CSYl31nx.css">
   <link rel="manifest" href="/zen/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/zen/registerSW.js"></script></head>
   <body>
     <div id="app">
-      <canvas id="gameCanvas"></canvas>
       
-      <!-- Overlay UI -->
-      <div id="ui-layer">
-        <header>
-          <h1>Zen</h1>
-        </header>
-
-        <!-- Menu Principal -->
-        <div id="main-menu" class="screen active">
-          <p>Selecciona un modo para relajarte</p>
-          <div class="menu-buttons">
-            <button id="btn-archery" class="mode-btn">
-              <span class="icon">🏹</span>
-              Arquería Zen
-            </button>
-            <button id="btn-bounce" class="mode-btn">
-              <span class="icon">🔵</span>
-              Caos de Rebotes
-            </button>
-          </div>
+      <!-- Top Half: Game Canvas -->
+      <div id="game-container">
+        <!-- Mode Switcher (Floating Top Left) -->
+        <button id="btn-toggle-mode" class="floating-btn">🔄 Modo: Arquería</button>
+        <!-- Score / Currency (Floating Top Right) -->
+        <div id="score-display">
+          <span id="currency">0</span> 💎
         </div>
-
-        <!-- Interfaz de Arquería -->
-        <div id="ui-archery" class="screen">
-          <div class="top-bar">
-            <button class="back-btn">← Volver</button>
-            <div class="score">Puntos: <span id="archery-score">0</span></div>
-          </div>
-          <div class="bottom-bar">
-            <button id="btn-upgrade-speed" class="upgrade-btn">
-              Más Rápido (<span id="cost-speed">10</span>p)
-            </button>
-            <button id="btn-upgrade-damage" class="upgrade-btn">
-              Más Daño (<span id="cost-damage">20</span>p)
-            </button>
-          </div>
-        </div>
-
-        <!-- Interfaz de Rebotes -->
-        <div id="ui-bounce" class="screen">
-          <div class="top-bar">
-            <button class="back-btn">← Volver</button>
-          </div>
-          <div class="bottom-bar controls">
-            <button id="btn-add-ball" class="action-btn">
-              + Agregar Pelota
-            </button>
-            <div class="slider-container">
-              <label for="speed-slider">Velocidad Inicial</label>
-              <input type="range" id="speed-slider" min="1" max="15" value="5">
-            </div>
-            <button id="btn-clear-balls" class="action-btn danger">
-              Limpiar
-            </button>
-          </div>
-        </div>
+        
+        <canvas id="gameCanvas"></canvas>
       </div>
+
+      <!-- Bottom Half: UI Panels -->
+      <div id="ui-container">
+        
+        <!-- Tabs Header -->
+        <div class="tabs-header">
+          <button class="tab-btn active" data-tab="tab-sparks">SPARKS</button>
+          <button class="tab-btn" data-tab="tab-upgrades">UPGRADES</button>
+          <button class="tab-btn" data-tab="tab-chaos" id="tab-chaos-btn" style="display:none;">CAOS</button>
+        </div>
+
+        <!-- Tab Content: Sparks (Archery Mode) -->
+        <div id="tab-sparks" class="tab-content active">
+          <div class="cards-grid">
+            
+            <!-- Card 1: Add Spark -->
+            <div class="upgrade-card">
+              <div class="card-icon">➤</div>
+              <div class="card-info">
+                <div class="card-title">SPARK</div>
+                <div class="card-desc">Daño: <span id="stat-dmg">1.0</span></div>
+              </div>
+              <div class="card-actions">
+                <button id="btn-add-spark" class="action-btn primary">
+                  +1<br><small><span id="cost-spark">10</span> 💎</small>
+                </button>
+                <button id="btn-upg-spark" class="action-btn secondary">
+                  Lvl Up<br><small><span id="cost-upg-spark">20</span> 💎</small>
+                </button>
+              </div>
+            </div>
+
+            <!-- Card 2: Merge Sparks -->
+            <div class="upgrade-card">
+              <div class="card-icon merge-icon">⪢</div>
+              <div class="card-info">
+                <div class="card-title">MERGE</div>
+                <div class="card-desc">Sparks: <span id="stat-count">1</span></div>
+              </div>
+              <div class="card-actions">
+                <button id="btn-merge-spark" class="action-btn primary full-width">
+                  Fusionar<br><small>Requiere 2 Sparks</small>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tab Content: Upgrades (Archery Mode) -->
+        <div id="tab-upgrades" class="tab-content">
+          <div class="cards-grid">
+            <!-- Add future global upgrades here -->
+            <div class="upgrade-card">
+              <div class="card-info">
+                <div class="card-title">SPAWN RATE</div>
+                <div class="card-desc">Polígonos más rápidos</div>
+              </div>
+              <div class="card-actions">
+                <button class="action-btn secondary disabled">Próximamente</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Content: Chaos Controls (Bouncing Mode) -->
+        <div id="tab-chaos" class="tab-content">
+          <div class="cards-grid">
+            
+            <!-- Card: Add Ball -->
+            <div class="upgrade-card">
+              <div class="card-icon">🔵</div>
+              <div class="card-info">
+                <div class="card-title">AGREGAR PELOTA</div>
+                <div class="card-desc">Pelotas: <span id="ball-count">0</span></div>
+              </div>
+              <div class="card-actions">
+                <button id="btn-add-ball" class="action-btn primary full-width">+ Añadir</button>
+              </div>
+            </div>
+
+            <!-- Card: Toggles -->
+            <div class="upgrade-card">
+              <div class="card-info" style="width: 100%;">
+                <div class="toggle-row">
+                  <span>Gravedad</span>
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-gravity" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+                <div class="toggle-row">
+                  <span>Colisiones</span>
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-collision">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="upgrade-card">
+              <button id="btn-clear-balls" class="action-btn danger full-width" style="height: 100%;">Limpiar Todo</button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </body>
 </html>
