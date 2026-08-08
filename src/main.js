@@ -1,4 +1,3 @@
-import './style.css';
 import { setupCanvas } from './utils/canvas.js';
 import { ArcheryMode } from './modes/archery.js';
 import { BouncingMode } from './modes/bouncing.js';
