@@ -105,7 +105,6 @@ effectBtns.forEach(btn => {
 // Disappear
 const disappearToggle = document.getElementById('opt-disappear');
 const bouncesMaxRow = document.getElementById('bounces-max-row');
-const bouncesRow = document.getElementById('bounces-row');
 
 const bouncesSlider = document.getElementById('opt-bounces');
 const bouncesLabel = document.getElementById('bounces-label');
@@ -115,7 +114,6 @@ const disappearProbLabel = document.getElementById('disappear-prob-label');
 disappearToggle.addEventListener('change', () => {
   engine.setDisappear(disappearToggle.checked);
   bouncesMaxRow.classList.toggle('hidden', !disappearToggle.checked);
-  bouncesRow.classList.toggle('hidden', !disappearToggle.checked);
 });
 
 bouncesSlider.addEventListener('input', () => {

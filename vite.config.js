@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.png', 'favicon.svg'],
       manifest: {
         name: 'Zen Relaxing App',
         short_name: 'Zen PWA',
@@ -17,7 +17,6 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         start_url: './index.html',
-        id: '/zen/',
         icons: [
           {
             src: 'pwa-192x192.png',
