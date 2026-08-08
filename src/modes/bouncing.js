@@ -84,7 +84,7 @@ export class BouncingMode {
       }
     }
 
-    this.balls.push({
+    const b = {
       x: spawnX,
       y: spawnY,
       vx: Math.cos(angle) * this.initialSpeed,
@@ -95,7 +95,10 @@ export class BouncingMode {
       bounces: 0,
       alpha: 1,
       trail: [],
-    });
+    };
+    
+    this._cacheSprite(b);
+    this.balls.push(b);
   }
 
   clearBalls() { this.balls = []; this.particles = []; }
@@ -114,7 +117,12 @@ export class BouncingMode {
   
   setPalette(p) { this.palette = p; }
   setTrail(on) { this.showTrail = on; }
-  setGlow(v) { this.glowIntensity = v; }
+  setGlow(v) { 
+    if (this.glowIntensity !== v) {
+      this.glowIntensity = v; 
+      this.balls.forEach(b => this._cacheSprite(b));
+    }
+  }
   setBorderThickness(v) { this.borderThickness = v; }
   setCollisionEffect(e) { this.collisionEffect = e; }
   
@@ -227,8 +235,7 @@ export class BouncingMode {
     }
   }
 
-  // Nudges an hsl(...) color string's lightness by `dl` percentage points,
-  // used to build a glossy highlight/shadow gradient from each ball's base hue.
+  // Nudges an hsl(...) color string's lightness by `dl` percentage points
   _adjustHsl(hslStr, dl) {
     const m = /hsl\(\s*([-\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*\)/.exec(hslStr);
     if (!m) return hslStr;
@@ -236,6 +243,45 @@ export class BouncingMode {
     const s = parseFloat(m[2]);
     const l = Math.max(0, Math.min(100, parseFloat(m[3]) + dl));
     return `hsl(${h}, ${s}%, ${l}%)`;
+  }
+
+  // Pre-renders the complex 3D glass effect into an offscreen canvas (Sprite Caching)
+  _cacheSprite(b) {
+    const padding = Math.max(15, this.glowIntensity + 5);
+    const size = (b.radius + padding) * 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    const cx = size / 2;
+    const cy = size / 2;
+
+    ctx.save();
+    if (this.glowIntensity > 0) {
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = this.glowIntensity;
+    }
+    const bodyGrad = ctx.createRadialGradient(
+      cx - b.radius * 0.32, cy - b.radius * 0.36, b.radius * 0.05,
+      cx, cy, b.radius
+    );
+    bodyGrad.addColorStop(0, this._adjustHsl(b.color, 22));
+    bodyGrad.addColorStop(0.6, b.color);
+    bodyGrad.addColorStop(1, this._adjustHsl(b.color, -16));
+    ctx.beginPath();
+    ctx.arc(cx, cy, b.radius, 0, Math.PI * 2);
+    ctx.fillStyle = bodyGrad;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(cx - b.radius * 0.28, cy - b.radius * 0.32, b.radius * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    
+    b.sprite = canvas;
+    b.spriteOffset = cx;
   }
 
   draw() {
@@ -270,10 +316,13 @@ export class BouncingMode {
     ctx.stroke();
     ctx.restore();
 
-    // Draw Particles
+    // Draw Particles (simplified, no shadowBlur)
     for (const p of this.particles) {
        ctx.globalAlpha = p.alpha;
-       drawCircle(ctx, p.x, p.y, p.radius, p.color);
+       ctx.fillStyle = p.color;
+       ctx.beginPath();
+       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+       ctx.fill();
     }
     ctx.globalAlpha = 1;
 
@@ -281,39 +330,23 @@ export class BouncingMode {
     for (const b of this.balls) {
       // Trail
       if (this.showTrail && b.trail.length > 1) {
+        ctx.fillStyle = b.color;
         for (let ti = 0; ti < b.trail.length; ti++) {
           const p = b.trail[ti];
           const a = (ti / b.trail.length) * 0.25 * b.alpha;
           ctx.globalAlpha = a;
-          drawCircle(ctx, p.x, p.y, b.radius * 0.6, b.color);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, b.radius * 0.6, 0, Math.PI * 2);
+          ctx.fill();
         }
         ctx.globalAlpha = 1;
       }
 
-      // Glossy body: radial gradient from a lightened hotspot to a
-      // darkened rim, so each ball reads as a small glass/gel sphere.
-      ctx.save();
+      // Draw the pre-rendered sprite instead of calculating gradients and shadows!
       ctx.globalAlpha = b.alpha;
-      if (this.glowIntensity > 0) {
-        ctx.shadowColor = b.color;
-        ctx.shadowBlur = this.glowIntensity;
+      if (b.sprite) {
+        ctx.drawImage(b.sprite, b.x - b.spriteOffset, b.y - b.spriteOffset);
       }
-      const bodyGrad = ctx.createRadialGradient(
-        b.x - b.radius * 0.32, b.y - b.radius * 0.36, b.radius * 0.05,
-        b.x, b.y, b.radius
-      );
-      bodyGrad.addColorStop(0, this._adjustHsl(b.color, 22));
-      bodyGrad.addColorStop(0.6, b.color);
-      bodyGrad.addColorStop(1, this._adjustHsl(b.color, -16));
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-      ctx.fillStyle = bodyGrad;
-      ctx.fill();
-      ctx.restore();
-
-      // Crisp specular highlight
-      ctx.globalAlpha = 0.55 * b.alpha;
-      drawCircle(ctx, b.x - b.radius * 0.28, b.y - b.radius * 0.32, b.radius * 0.22, 'rgba(255,255,255,0.95)');
       ctx.globalAlpha = 1;
     }
   }
