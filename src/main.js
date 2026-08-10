@@ -193,119 +193,194 @@ borderThickSlider.addEventListener('input', () => {
   borderThickLabel.textContent = borderThickSlider.value;
 });
 
-// ═══ RANDOM MODE ═══
-const randomToggle = document.getElementById('opt-random');
-const randomStatus = document.getElementById('random-status');
-const randomSpeedSlider = document.getElementById('opt-random-speed');
+// ═══ BATTLE MODE ═══
+const battleToggle = document.getElementById('opt-battle');
+const battleHealthRow = document.getElementById('battle-health-row');
+const battleHealthSlider = document.getElementById('opt-battle-health');
+const battleHealthLabel = document.getElementById('battle-health-label');
 
-let randomInterval = null;
+battleToggle.addEventListener('change', () => {
+  engine.setBattleMode(battleToggle.checked);
+  battleHealthRow.classList.toggle('hidden', !battleToggle.checked);
+});
 
-function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+battleHealthSlider.addEventListener('input', () => {
+  const hp = parseInt(battleHealthSlider.value);
+  engine.setBattleHealth(hp);
+  battleHealthLabel.textContent = hp;
+});
 
-function randomizeSettings() {
-  // We simulate inputs on the UI so it stays in sync
-  
-  // Gravity
-  const grav = Math.random() > 0.3;
-  gravToggle.checked = grav;
-  gravToggle.dispatchEvent(new Event('change'));
-  if (grav) {
-    gravSlider.value = getRandomInt(10, 80);
-    gravSlider.dispatchEvent(new Event('input'));
-  }
+// ═══ AUTO SPAWN ═══
+const autospawnToggle = document.getElementById('opt-autospawn');
+const autospawnStatus = document.getElementById('autospawn-status');
+const autospawnSpeedSlider = document.getElementById('opt-autospawn-speed');
 
-  // Collision
-  const col = Math.random() > 0.5;
-  const colToggle = document.getElementById('opt-collision');
-  colToggle.checked = col;
-  colToggle.dispatchEvent(new Event('change'));
+let autospawnInterval = null;
 
-  // Speed
-  speedSlider.value = getRandomInt(2, 15);
-  speedSlider.dispatchEvent(new Event('input'));
+function startAutospawn() {
+  const speed = parseInt(autospawnSpeedSlider.value);
+  const changeMs = Math.max(200, 2000 - speed * 180);
 
-  // Size
-  const sMin = getRandomInt(4, 20);
-  const sMax = getRandomInt(sMin + 5, 60);
-  sizeMinSlider.value = sMin;
-  sizeMaxSlider.value = sMax;
-  sizeMinSlider.dispatchEvent(new Event('input'));
-  sizeMaxSlider.dispatchEvent(new Event('input'));
-
-  // Disappear
-  const dis = Math.random() > 0.5;
-  disappearToggle.checked = dis;
-  disappearToggle.dispatchEvent(new Event('change'));
-  if (dis) {
-    bouncesSlider.value = getRandomInt(2, 30);
-    bouncesSlider.dispatchEvent(new Event('input'));
-    
-    disappearProbSlider.value = getRandomInt(0, 100);
-    disappearProbSlider.dispatchEvent(new Event('input'));
-  }
-
-  // Trail
-  const trail = Math.random() > 0.5;
-  const optTrail = document.getElementById('opt-trail');
-  optTrail.checked = trail;
-  optTrail.dispatchEvent(new Event('change'));
-
-  // Glow
-  glowSlider.value = getRandomInt(0, 25);
-  glowSlider.dispatchEvent(new Event('input'));
-  
-  // Border thickness
-  borderThickSlider.value = getRandomInt(1, 8);
-  borderThickSlider.dispatchEvent(new Event('input'));
-
-  // Palette
-  const palettes = ['neon', 'pastel', 'mono', 'rainbow', 'fire', 'ocean'];
-  const pal = palettes[getRandomInt(0, palettes.length - 1)];
-  const pBtn = document.querySelector(`.palette-btn[data-palette="${pal}"]`);
-  if(pBtn) pBtn.click();
-  
-  // Effect
-  const effects = ['none', 'particles', 'flash'];
-  const eff = effects[getRandomInt(0, effects.length - 1)];
-  const eBtn = document.querySelector(`.effect-btn[data-effect="${eff}"]`);
-  if(eBtn) eBtn.click();
+  autospawnInterval = setInterval(() => {
+    if (engine.balls.length < 150) {
+      engine.addBall();
+      updateCounter();
+    }
+  }, changeMs);
 }
 
-function startRandom() {
-  const speed = parseInt(randomSpeedSlider.value);
-  const changeMs = Math.max(800, 5000 - speed * 400);
-
-  randomizeSettings();
-  randomInterval = setInterval(randomizeSettings, changeMs);
-  
-  // Set spawn prob a bit high so it acts automatic
-  spawnProbSlider.value = 10;
-  spawnProbSlider.dispatchEvent(new Event('input'));
+function stopAutospawn() {
+  clearInterval(autospawnInterval);
+  autospawnInterval = null;
 }
 
-function stopRandom() {
-  clearInterval(randomInterval);
-  randomInterval = null;
-  spawnProbSlider.value = 0;
-  spawnProbSlider.dispatchEvent(new Event('input'));
-}
-
-randomToggle.addEventListener('change', () => {
-  if (randomToggle.checked) {
-    randomStatus.textContent = 'ON';
-    startRandom();
+autospawnToggle.addEventListener('change', () => {
+  if (autospawnToggle.checked) {
+    autospawnStatus.textContent = 'ON';
+    startAutospawn();
   } else {
-    randomStatus.textContent = 'OFF';
-    stopRandom();
+    autospawnStatus.textContent = 'OFF';
+    stopAutospawn();
   }
 });
 
-randomSpeedSlider.addEventListener('input', () => {
-  if (randomToggle.checked) {
-    stopRandom();
-    startRandom();
+autospawnSpeedSlider.addEventListener('input', () => {
+  if (autospawnToggle.checked) {
+    stopAutospawn();
+    startAutospawn();
   }
 });
+
+// ═══ WAKE LOCK ═══
+let wakeLock = null;
+const wakeLockToggle = document.getElementById('opt-wakelock');
+
+const requestWakeLock = async () => {
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch (err) {
+    console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+  }
+};
+
+const handleWakeLock = async () => {
+  if (wakeLockToggle.checked) {
+    await requestWakeLock();
+  } else {
+    if (wakeLock !== null) {
+      wakeLock.release();
+      wakeLock = null;
+    }
+  }
+};
+
+wakeLockToggle.addEventListener('change', handleWakeLock);
+document.addEventListener('visibilitychange', async () => {
+  if (wakeLock !== null && document.visibilityState === 'visible') {
+    await requestWakeLock();
+  }
+});
+
+// ═══ LOCAL STORAGE CACHE ═══
+function saveSettings() {
+  const settings = {
+    gravity: document.getElementById('opt-gravity').checked,
+    gravityVal: document.getElementById('opt-gravity-val').value,
+    collision: document.getElementById('opt-collision').checked,
+    effect: document.querySelector('.effect-btn.active')?.dataset.effect || 'none',
+    spawnProb: document.getElementById('opt-spawn-prob').value,
+    disappearProb: document.getElementById('opt-disappear-prob').value,
+    disappear: document.getElementById('opt-disappear').checked,
+    bounces: document.getElementById('opt-bounces').value,
+    speed: document.getElementById('opt-speed').value,
+    sizeMin: document.getElementById('opt-size-min').value,
+    sizeMax: document.getElementById('opt-size-max').value,
+    darkmode: document.getElementById('opt-darkmode').checked,
+    palette: document.querySelector('.palette-btn.active')?.dataset.palette || 'neon',
+    trail: document.getElementById('opt-trail').checked,
+    glow: document.getElementById('opt-glow').value,
+    borderThick: document.getElementById('opt-border-thick').value,
+    autospawn: document.getElementById('opt-autospawn').checked,
+    autospawnSpeed: document.getElementById('opt-autospawn-speed').value,
+    wakelock: document.getElementById('opt-wakelock').checked,
+    battle: document.getElementById('opt-battle').checked,
+    battleHealth: document.getElementById('opt-battle-health').value
+  };
+  localStorage.setItem('zenBallsSettings', JSON.stringify(settings));
+}
+
+function loadSettings() {
+  try {
+    const data = localStorage.getItem('zenBallsSettings');
+    if (!data) return;
+    const s = JSON.parse(data);
+
+    const setCheck = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && el.checked !== val) {
+        el.checked = val;
+        el.dispatchEvent(new Event('change'));
+      }
+    };
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && el.value !== val) {
+        el.value = val;
+        el.dispatchEvent(new Event('input'));
+      }
+    };
+
+    setCheck('opt-gravity', s.gravity);
+    setVal('opt-gravity-val', s.gravityVal);
+    setCheck('opt-collision', s.collision);
+    
+    if (s.effect) {
+      const eBtn = document.querySelector(`.effect-btn[data-effect="${s.effect}"]`);
+      if (eBtn) eBtn.click();
+    }
+
+    setVal('opt-spawn-prob', s.spawnProb);
+    setVal('opt-disappear-prob', s.disappearProb);
+    setCheck('opt-disappear', s.disappear);
+    setVal('opt-bounces', s.bounces);
+    setVal('opt-speed', s.speed);
+    setVal('opt-size-min', s.sizeMin);
+    setVal('opt-size-max', s.sizeMax);
+    setCheck('opt-darkmode', s.darkmode);
+
+    if (s.palette) {
+      const pBtn = document.querySelector(`.palette-btn[data-palette="${s.palette}"]`);
+      if (pBtn) pBtn.click();
+    }
+
+    setCheck('opt-trail', s.trail);
+    setVal('opt-glow', s.glow);
+    setVal('opt-border-thick', s.borderThick);
+    
+    setVal('opt-autospawn-speed', s.autospawnSpeed);
+    setCheck('opt-autospawn', s.autospawn);
+
+    setCheck('opt-wakelock', s.wakelock);
+    
+    setVal('opt-battle-health', s.battleHealth);
+    setCheck('opt-battle', s.battle);
+    
+  } catch(e) {
+    console.error("Error loading settings", e);
+  }
+}
+
+// Bind save to all inputs in the modal
+document.getElementById('modal-overlay').addEventListener('input', saveSettings);
+document.getElementById('modal-overlay').addEventListener('change', saveSettings);
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target.closest('.palette-btn') || e.target.closest('.effect-btn')) {
+    setTimeout(saveSettings, 50); // wait for active class to be added
+  }
+});
+
+// Load settings on startup
+window.addEventListener('DOMContentLoaded', loadSettings);
 
 // ═══ GAME LOOP ═══
 function gameLoop() {

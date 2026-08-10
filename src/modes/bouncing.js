@@ -44,6 +44,10 @@ export class BouncingMode {
     this.borderThickness = 1.5;
     this.collisionEffect = 'none'; // 'none', 'particles', 'flash'
 
+    // Battle Mode
+    this.useBattleMode = false;
+    this.battleHealth = 5;
+
     // Derived
     this.boundaryRadius = 0;
     this.center = { x: 0, y: 0 };
@@ -96,6 +100,8 @@ export class BouncingMode {
       alpha: 1,
       isFading: false,
       trail: [],
+      hp: this.battleHealth,
+      maxHp: this.battleHealth
     };
     
     this._cacheSprite(b);
@@ -127,6 +133,9 @@ export class BouncingMode {
   setBorderThickness(v) { this.borderThickness = v; }
   setCollisionEffect(e) { this.collisionEffect = e; }
   
+  setBattleMode(on) { this.useBattleMode = on; }
+  setBattleHealth(hp) { this.battleHealth = hp; }
+
   spawnParticles(x, y, color) {
     const count = 6 + Math.random() * 6;
     for(let i=0; i<count; i++) {
@@ -227,7 +236,23 @@ export class BouncingMode {
       if (this.useCollision) {
         for (let j = i + 1; j < this.balls.length; j++) {
           if (circleCollision(b, this.balls[j])) {
-            resolveCollision(b, this.balls[j]);
+            const ballB = this.balls[j];
+            
+            // Battle logic before velocity changes
+            if (this.useBattleMode && !b.isFading && !ballB.isFading) {
+               const keA = b.mass * (b.vx*b.vx + b.vy*b.vy);
+               const keB = ballB.mass * (ballB.vx*ballB.vx + ballB.vy*ballB.vy);
+               
+               if (keA > keB + 0.5) { // Add small epsilon to prevent ties
+                 ballB.hp -= 1;
+                 if (ballB.hp <= 0) ballB.isFading = true;
+               } else if (keB > keA + 0.5) {
+                 b.hp -= 1;
+                 if (b.hp <= 0) b.isFading = true;
+               }
+            }
+
+            resolveCollision(b, ballB);
             
             // Collision effects
             if (this.collisionEffect === 'particles') {
@@ -356,6 +381,27 @@ export class BouncingMode {
         ctx.drawImage(b.sprite, b.x - b.spriteOffset, b.y - b.spriteOffset);
       }
       ctx.globalAlpha = 1;
+
+      // Draw Battle Health Bar
+      if (this.useBattleMode && !b.isFading) {
+        const barWidth = b.radius * 1.5;
+        const barHeight = 4;
+        const hpPct = Math.max(0, b.hp / b.maxHp);
+        
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(b.x - barWidth/2, b.y - b.radius - 10, barWidth, barHeight);
+        
+        // Color transition: green to red
+        const r = Math.min(255, (1 - hpPct) * 510);
+        const g = Math.min(255, hpPct * 510);
+        ctx.fillStyle = `rgb(${r},${g},0)`;
+        ctx.fillRect(b.x - barWidth/2, b.y - b.radius - 10, barWidth * hpPct, barHeight);
+        
+        // Outline
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(b.x - barWidth/2, b.y - b.radius - 10, barWidth, barHeight);
+      }
     }
   }
 }
