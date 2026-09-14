@@ -29,11 +29,33 @@
       <canvas id="gameCanvas"></canvas>
       <div class="vignette"></div>
       
-      <div class="brand-mark" aria-hidden="true"><span class="brand-dot"></span>zen</div>
+      <div class="brand-mark" aria-hidden="true"><span class="brand-dot"></span><span id="brand-text">zen</span></div>
       
+      <!-- ═══ MODE SELECTOR ═══ -->
+      <div class="mode-pill" id="mode-switcher">
+        <button class="mode-pill-btn active" data-mode="bouncing" id="btn-mode-bouncing" title="Modo Bolas Zen">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="pill-icon"><circle cx="12" cy="12" r="7"/></svg>
+          <span>Bolas</span>
+        </button>
+        <button class="mode-pill-btn" data-mode="conway" id="btn-mode-conway" title="Modo Juego de la Vida">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pill-icon">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          </svg>
+          <span>Vida</span>
+        </button>
+      </div>
+
       <!-- ═══ HUD & FLOATING BUTTONS ═══ -->
       <div class="hud">
         <span class="hud-badge"><span class="hud-dot"></span><span id="ball-counter">0 bolas</span></span>
+        <button id="btn-audio" class="floating-btn active" title="Sonido Melódico Zen (Silenciar / Activar)">
+          <div class="audio-bars" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </button>
         <button id="btn-pause" class="floating-btn" title="Pausar / Reproducir">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="5" width="4" height="14" />
@@ -45,6 +67,57 @@
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
+        </button>
+      </div>
+
+      <!-- ═══ CONWAY QUICK FLOATING TOOLBAR ═══ -->
+      <div id="conway-bar" class="conway-bar hidden">
+        <button id="btn-conway-step" class="conway-btn" title="Avanzar 1 generación">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="5 4 15 12 5 20 5 4" fill="currentColor"></polygon>
+            <line x1="19" y1="5" x2="19" y2="19" stroke-linecap="round"></line>
+          </svg>
+          <span>Paso</span>
+        </button>
+        
+        <div class="preset-dropdown">
+          <button id="btn-conway-presets" class="conway-btn" title="Elegir patrón o preset">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            <span>Patrones</span>
+            <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div id="conway-preset-menu" class="conway-menu hidden">
+            <div class="menu-label">Patrones Clásicos</div>
+            <button class="preset-item" data-preset="pulsar">💫 Púlsar (Oscilador)</button>
+            <button class="preset-item" data-preset="gun">🚀 Cañón de Gosper</button>
+            <button class="preset-item" data-preset="glider">🛸 Planeador (Glider)</button>
+            <button class="preset-item" data-preset="lwss">🛰️ Nave Ligera (LWSS)</button>
+            <button class="preset-item" data-preset="pentadecathlon">⚡ Pentadecathlon (P15)</button>
+            <button class="preset-item" data-preset="acorn">🌱 Bellota (Acorn)</button>
+            <button class="preset-item" data-preset="random">🎲 Sopa Aleatoria</button>
+          </div>
+        </div>
+
+        <button id="btn-conway-random" class="conway-btn" title="Generar células aleatorias">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <polyline points="16 3 21 3 21 8"></polyline>
+            <line x1="4" y1="20" x2="21" y2="3"></line>
+            <polyline points="21 16 21 21 16 21"></polyline>
+            <line x1="15" y1="15" x2="21" y2="21"></line>
+            <line x1="4" y1="4" x2="9" y2="9"></line>
+          </svg>
+          <span>Aleatorio</span>
+        </button>
+
+        <button id="btn-conway-clear" class="conway-btn conway-btn-danger" title="Limpiar universo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16" />
+            <path d="M9 7V4h6v3" />
+            <path d="M6 7l1 13h10l1-13" />
+          </svg>
+          <span>Limpiar</span>
         </button>
       </div>
     </div>
@@ -253,6 +326,64 @@
               <span class="ctrl-label-sm">Lento</span>
               <input type="range" id="opt-autospawn-speed" min="1" max="10" value="5" class="range">
               <span class="ctrl-label-sm">Rápido</span>
+            </div>
+          </div>
+
+          <!-- ─── SECTION: AUDIO ─── -->
+          <div class="section-title" style="margin-top: 24px;">Audio Melódico Zen</div>
+
+          <div class="ctrl-group">
+            <div class="ctrl-toggle-row">
+              <span class="ctrl-label">Sonido Relajante en Rebotes</span>
+              <label class="switch"><input type="checkbox" id="opt-sound" checked><span class="track"><span class="thumb"></span></span></label>
+            </div>
+            
+            <div class="slider-row" style="margin-top:14px;">
+              <span class="ctrl-label-sm" style="min-width: 50px;">Volumen</span>
+              <input type="range" id="opt-volume" min="0" max="100" value="50" class="range">
+              <span class="range-val" id="volume-val-label">50%</span>
+            </div>
+
+            <div class="ctrl-toggle-row" style="margin-top: 14px;">
+              <span class="ctrl-label-sm">Audio Espacial (Estéreo)</span>
+              <label class="switch"><input type="checkbox" id="opt-spatial" checked><span class="track"><span class="thumb"></span></span></label>
+            </div>
+
+            <span class="ctrl-label-sm" style="display:block; margin-top: 14px; margin-bottom: 8px;">Instrumento Armónico</span>
+            <div class="palette-grid" style="grid-template-columns: 1fr 1fr;">
+              <button class="instrument-btn active" data-instrument="bells">🔔 Campanas Zen</button>
+              <button class="instrument-btn" data-instrument="kalimba">🎶 Kalimba</button>
+              <button class="instrument-btn" data-instrument="bowls">🥣 Cuencos</button>
+              <button class="instrument-btn" data-instrument="crystal">✨ Cristal</button>
+            </div>
+          </div>
+
+          <!-- ─── SECTION: CONWAY SETTINGS ─── -->
+          <div class="section-title" style="margin-top: 24px;">Juego de la Vida (Conway)</div>
+
+          <div class="ctrl-group" style="margin-bottom: 24px;">
+            <span class="ctrl-label">Velocidad de Simulación (Gen/seg)</span>
+            <div class="slider-row">
+              <span class="ctrl-label-sm">1</span>
+              <input type="range" id="opt-conway-speed" min="1" max="40" value="12" class="range">
+              <span class="range-val" id="conway-speed-label">12</span>
+            </div>
+
+            <span class="ctrl-label" style="margin-top: 14px;">Tamaño de Célula</span>
+            <div class="slider-row">
+              <span class="ctrl-label-sm">Fino</span>
+              <input type="range" id="opt-conway-size" min="8" max="28" value="14" step="2" class="range">
+              <span class="range-val" id="conway-size-label">14px</span>
+            </div>
+
+            <div class="ctrl-toggle-row" style="margin-top: 14px;">
+              <span class="ctrl-label">Universo Toroidal (Sin Bordes)</span>
+              <label class="switch"><input type="checkbox" id="opt-conway-wrap" checked><span class="track"><span class="thumb"></span></span></label>
+            </div>
+
+            <div class="ctrl-toggle-row" style="margin-top: 14px;">
+              <span class="ctrl-label">Estela Fosforescente</span>
+              <label class="switch"><input type="checkbox" id="opt-conway-trail" checked><span class="track"><span class="thumb"></span></span></label>
             </div>
           </div>
 

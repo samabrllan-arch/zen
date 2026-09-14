@@ -202,6 +202,64 @@ body {
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
+/* ═══ MODE SELECTOR ═══ */
+.mode-pill {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+  box-shadow: 0 4px 16px var(--shadow);
+  gap: 2px;
+}
+
+.mode-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mode-pill-btn .pill-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s;
+}
+
+.mode-pill-btn:hover {
+  color: var(--text-1);
+}
+
+.mode-pill-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #1a0f08;
+  box-shadow: 0 2px 10px var(--accent-glow);
+}
+
+[data-theme="light"] .mode-pill-btn.active {
+  color: #2a1204;
+}
+
+.mode-pill-btn.active .pill-icon {
+  transform: scale(1.1);
+}
+
 /* ═══ HUD & FLOATING BUTTONS ═══ */
 .hud {
   position: absolute;
@@ -210,7 +268,7 @@ body {
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .hud-badge {
@@ -218,6 +276,8 @@ body {
   align-items: center;
   gap: 6px;
   background: var(--bg-card);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
   padding: 6px 14px 6px 10px;
   border-radius: 999px;
@@ -248,6 +308,8 @@ body {
   height: 36px;
   border-radius: 50%;
   background: var(--bg-card);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
   color: var(--text-1);
   display: flex;
@@ -269,6 +331,56 @@ body {
 
 .floating-btn:active {
   transform: scale(0.92);
+}
+
+/* Audio Visualizer Waves in HUD Button */
+.audio-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+  width: 14px;
+}
+
+.audio-bars span {
+  flex: 1;
+  background: var(--accent);
+  border-radius: 1px;
+  height: 30%;
+  transition: height 0.2s ease, opacity 0.2s ease;
+}
+
+#btn-audio.active .audio-bars span:nth-child(1) {
+  animation: audioBar1 1.1s ease-in-out infinite alternate;
+}
+#btn-audio.active .audio-bars span:nth-child(2) {
+  animation: audioBar2 0.85s ease-in-out infinite alternate;
+}
+#btn-audio.active .audio-bars span:nth-child(3) {
+  animation: audioBar3 1.25s ease-in-out infinite alternate;
+}
+
+@keyframes audioBar1 {
+  0% { height: 25%; }
+  100% { height: 95%; }
+}
+@keyframes audioBar2 {
+  0% { height: 40%; }
+  100% { height: 100%; }
+}
+@keyframes audioBar3 {
+  0% { height: 20%; }
+  100% { height: 80%; }
+}
+
+#btn-audio.muted {
+  opacity: 0.55;
+}
+
+#btn-audio.muted .audio-bars span {
+  animation: none !important;
+  height: 2px !important;
+  opacity: 0.35;
 }
 
 @keyframes hudPulse {
@@ -819,17 +931,210 @@ input:focus-visible+.big-track {
   }
 }
 
-/* ═══ RESPONSIVE ═══ */
-@media (min-height: 750px) {
-  #game-container {
-    flex: 0 0 55%;
-  }
+/* ═══ CONWAY FLOATING TOOLBAR ═══ */
+.conway-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  box-shadow: 0 8px 32px var(--shadow);
+  transition: opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-width: calc(100% - 32px);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-@media (min-width: 500px) {
-  .tab-panel {
-    max-width: 420px;
-    margin-left: auto;
-    margin-right: auto;
+.conway-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.conway-bar.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 16px);
+}
+
+.conway-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--bg-card);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.conway-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.conway-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.conway-btn:active {
+  transform: scale(0.95);
+}
+
+.conway-btn-danger:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* Preset dropdown inside Conway Bar */
+.preset-dropdown {
+  position: relative;
+}
+
+.conway-menu {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 12px 36px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 50;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.conway-menu.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px);
+}
+
+.conway-menu .menu-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 6px 10px 4px;
+}
+
+.preset-item {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.preset-item:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chevron-icon {
+  width: 12px !important;
+  height: 12px !important;
+  opacity: 0.7;
+}
+
+/* Instrument Selection Buttons in Settings */
+.instrument-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: var(--bg-input);
+  color: var(--text-2);
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.instrument-btn.active {
+  border-color: var(--accent);
+  color: var(--text-1);
+  background: var(--accent-soft);
+}
+
+.instrument-btn:hover {
+  border-color: var(--border-hover);
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 600px) {
+  .brand-mark span:not(.brand-dot) {
+    display: none;
+  }
+  
+  .hud {
+    gap: 6px;
+    right: 10px;
+    top: 10px;
+  }
+
+  .hud-badge {
+    padding: 5px 10px 5px 8px;
+    font-size: 0.66rem;
+  }
+
+  .mode-pill {
+    top: 10px;
+    padding: 2px;
+  }
+
+  .mode-pill-btn {
+    padding: 5px 10px;
+    font-size: 0.7rem;
+  }
+
+  .floating-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .conway-bar {
+    bottom: 16px;
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .conway-btn {
+    padding: 6px 10px;
+    font-size: 0.7rem;
   }
 }

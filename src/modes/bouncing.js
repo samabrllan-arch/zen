@@ -1,5 +1,6 @@
 import { drawCircle } from '../utils/canvas.js';
 import { resolveCollision, circleCollision, distance } from '../utils/physics.js';
+import { zenAudio } from '../utils/audio.js';
 
 const COLOR_PALETTES = {
   neon: () => `hsl(${Math.random() * 360}, 100%, 60%)`,
@@ -101,7 +102,8 @@ export class BouncingMode {
       isFading: false,
       trail: [],
       hp: this.battleHealth,
-      maxHp: this.battleHealth
+      maxHp: this.battleHealth,
+      hitCooldown: 0
     };
     
     this._cacheSprite(b);
@@ -176,6 +178,10 @@ export class BouncingMode {
     for (let i = this.balls.length - 1; i >= 0; i--) {
       const b = this.balls[i];
 
+      if (b.hitCooldown > 0) {
+        b.hitCooldown--;
+      }
+
       // Gravity
       if (this.useGravity) b.vy += this.gravityVal;
 
@@ -201,16 +207,24 @@ export class BouncingMode {
       // Boundary collision
       const d = distance(b.x, b.y, this.center.x, this.center.y);
       if (d + b.radius > this.boundaryRadius) {
-        const nx = (b.x - this.center.x) / d;
-        const ny = (b.y - this.center.y) / d;
-        const dot = b.vx * nx + b.vy * ny;
-        b.vx -= 2 * dot * nx;
-        b.vy -= 2 * dot * ny;
-        const overlap = (d + b.radius) - this.boundaryRadius;
-        b.x -= nx * overlap;
-        b.y -= ny * overlap;
+        if (d > 0.0001) {
+          const nx = (b.x - this.center.x) / d;
+          const ny = (b.y - this.center.y) / d;
+          const dot = b.vx * nx + b.vy * ny;
+          b.vx -= 2 * dot * nx;
+          b.vy -= 2 * dot * ny;
+          const overlap = (d + b.radius) - this.boundaryRadius;
+          b.x -= nx * overlap;
+          b.y -= ny * overlap;
+        } else {
+          b.x = this.center.x + 1;
+          b.y = this.center.y + 1;
+        }
 
         b.bounces++;
+
+        // Melodic sound on bounce
+        zenAudio.playBounce(b.x, b.y, b.radius, this.canvas.width, this.sizeMin, this.sizeMax);
 
         // Spawn on bounce
         if (this.spawnProbability > 0 && Math.random() < this.spawnProbability && this.balls.length < 150) {
@@ -243,12 +257,16 @@ export class BouncingMode {
                const keA = b.mass * (b.vx*b.vx + b.vy*b.vy);
                const keB = ballB.mass * (ballB.vx*ballB.vx + ballB.vy*ballB.vy);
                
-               if (keA > keB + 0.5) { // Add small epsilon to prevent ties
-                 ballB.hp -= 1;
-                 if (ballB.hp <= 0) ballB.isFading = true;
-               } else if (keB > keA + 0.5) {
-                 b.hp -= 1;
-                 if (b.hp <= 0) b.isFading = true;
+               if (b.hitCooldown <= 0 && ballB.hitCooldown <= 0) {
+                 if (keA > keB + 0.5) {
+                   ballB.hp -= 1;
+                   ballB.hitCooldown = 12;
+                   if (ballB.hp <= 0) ballB.isFading = true;
+                 } else if (keB > keA + 0.5) {
+                   b.hp -= 1;
+                   b.hitCooldown = 12;
+                   if (b.hp <= 0) b.isFading = true;
+                 }
                }
             }
 
@@ -281,7 +299,7 @@ export class BouncingMode {
   // Pre-renders the complex 3D glass effect into an offscreen canvas (Sprite Caching)
   _cacheSprite(b) {
     const padding = Math.max(15, this.glowIntensity + 5);
-    const size = (b.radius + padding) * 2;
+    const size = Math.ceil((b.radius + padding) * 2);
     const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
