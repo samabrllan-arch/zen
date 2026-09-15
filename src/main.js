@@ -441,11 +441,14 @@ sizeMaxSlider.addEventListener('input', () => {
 });
 
 // ═══ STYLE & PALETTES ═══
-document.getElementById('opt-darkmode').addEventListener('change', (e) => {
-  document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
-  document.querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', e.target.checked ? '#0a0a0d' : '#e7eae6');
-});
+const optDarkmode = document.getElementById('opt-darkmode');
+if (optDarkmode) {
+  optDarkmode.addEventListener('change', (e) => {
+    document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
+    document.querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', e.target.checked ? '#0a0a0d' : '#e7eae6');
+  });
+}
 
 const paletteBtns = document.querySelectorAll('.palette-btn');
 paletteBtns.forEach(btn => {
@@ -457,25 +460,32 @@ paletteBtns.forEach(btn => {
   });
 });
 
-document.getElementById('opt-trail').addEventListener('change', (e) => {
-  bouncingEngine.setTrail(e.target.checked);
-});
+const optTrail = document.getElementById('opt-trail');
+if (optTrail) {
+  optTrail.addEventListener('change', (e) => {
+    bouncingEngine.setTrail(e.target.checked);
+  });
+}
 
 const glowSlider = document.getElementById('opt-glow');
 const glowLabel = document.getElementById('glow-label');
-glowSlider.addEventListener('input', () => {
-  const g = parseInt(glowSlider.value);
-  bouncingEngine.setGlow(g);
-  conwayEngine.setGlow(g);
-  glowLabel.textContent = glowSlider.value;
-});
+if (glowSlider && glowLabel) {
+  glowSlider.addEventListener('input', () => {
+    const g = parseInt(glowSlider.value);
+    bouncingEngine.setGlow(g);
+    conwayEngine.setGlow(g);
+    glowLabel.textContent = glowSlider.value;
+  });
+}
 
 const borderThickSlider = document.getElementById('opt-border-thick');
 const borderThickLabel = document.getElementById('border-thick-label');
-borderThickSlider.addEventListener('input', () => {
-  bouncingEngine.setBorderThickness(parseFloat(borderThickSlider.value));
-  borderThickLabel.textContent = borderThickSlider.value;
-});
+if (borderThickSlider && borderThickLabel) {
+  borderThickSlider.addEventListener('input', () => {
+    bouncingEngine.setBorderThickness(parseFloat(borderThickSlider.value));
+    borderThickLabel.textContent = borderThickSlider.value;
+  });
+}
 
 // ═══ BATTLE MODE ═══
 const battleToggle = document.getElementById('opt-battle');
