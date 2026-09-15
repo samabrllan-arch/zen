@@ -969,7 +969,7 @@ input:focus-visible+.big-track {
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: var(--bg-surface-glass);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
@@ -978,7 +978,7 @@ input:focus-visible+.big-track {
   padding: 6px 10px;
   box-shadow: 0 8px 32px var(--shadow);
   transition: opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  max-width: calc(100% - 32px);
+  max-width: calc(100% - 24px);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -996,16 +996,17 @@ input:focus-visible+.big-track {
 .conway-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 13px;
+  gap: 5px;
+  padding: 7px 11px;
   border-radius: 999px;
   border: 1px solid transparent;
   background: var(--bg-card);
   color: var(--text-1);
   font-family: inherit;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s;
   white-space: nowrap;
 }
@@ -1014,6 +1015,11 @@ input:focus-visible+.big-track {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
+  pointer-events: none;
+}
+
+.conway-btn span {
+  pointer-events: none;
 }
 
 .conway-btn:hover {
@@ -1026,74 +1032,192 @@ input:focus-visible+.big-track {
   transform: scale(0.95);
 }
 
+.conway-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-soft);
+}
+
 .conway-btn-danger:hover {
   border-color: var(--red);
   color: var(--red);
 }
 
-/* Preset dropdown inside Conway Bar */
-.preset-dropdown {
-  position: relative;
-}
-
-.conway-menu {
-  position: absolute;
-  bottom: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 220px;
-  background: var(--bg-surface);
+/* Tool Pill: Pintar vs Mover */
+.conway-tool-pill {
+  display: flex;
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 8px;
-  box-shadow: 0 12px 36px var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 50;
-  transition: opacity 0.2s, transform 0.2s;
+  border-radius: 999px;
+  padding: 2px;
+  gap: 2px;
 }
 
-.conway-menu.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, 8px);
-}
-
-.conway-menu .menu-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  padding: 6px 10px 4px;
-}
-
-.preset-item {
-  display: flex;
-  align-items: center;
-  text-align: left;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
+.conway-tool-pill .conway-btn {
+  padding: 5px 8px;
+  font-size: 0.7rem;
   background: transparent;
-  color: var(--text-1);
-  font-family: inherit;
-  font-size: 0.76rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
+  border-radius: 999px;
 }
 
-.preset-item:hover {
+.conway-tool-pill .conway-btn.active {
   background: var(--accent-soft);
   color: var(--accent);
+  border-color: var(--accent);
 }
 
-.chevron-icon {
-  width: 12px !important;
-  height: 12px !important;
-  opacity: 0.7;
+/* Zoom Controls */
+.conway-zoom-group {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 4px;
+  gap: 2px;
+}
+
+.conway-btn-icon {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.conway-zoom-label {
+  padding: 0 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: transparent;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ═══ CONWAY PRESET POPOVER ═══ */
+.conway-preset-popover {
+  position: absolute;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 380px;
+  max-width: calc(100vw - 24px);
+  max-height: 68vh;
+  overflow-y: auto;
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 16px 48px var(--shadow), 0 0 24px var(--accent-soft);
+  z-index: 50;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.conway-preset-popover.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 14px) scale(0.96);
+}
+
+.preset-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.popover-title {
+  display: flex;
+  align-items: center;
+  font-family: 'Fraunces', serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.popover-close {
+  font-size: 1.4rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.popover-close:hover {
+  color: var(--text-1);
+}
+
+.popover-desc {
+  font-size: 0.72rem;
+  color: var(--text-2);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.preset-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.preset-card-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-1);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-align: left;
+  width: 100%;
+}
+
+.preset-card-item:hover, .preset-card-item:active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  transform: translateX(3px);
+}
+
+.preset-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.preset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.preset-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.preset-sub {
+  font-size: 0.66rem;
+  color: var(--text-2);
 }
 
 /* Instrument Selection Buttons in Settings */

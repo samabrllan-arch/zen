@@ -109,7 +109,10 @@ canvas.addEventListener('pointerdown', (e) => {
     bouncingEngine.addBall(x, y);
     updateCounter();
   } else {
-    conwayEngine.handlePointerDown(x, y);
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch (_) {}
+    conwayEngine.handlePointerDown(e.pointerId, x, y);
     updateCounter();
   }
 });
@@ -117,22 +120,38 @@ canvas.addEventListener('pointerdown', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (currentMode === 'conway') {
     const { x, y } = getCanvasCoords(e);
-    conwayEngine.handlePointerMove(x, y);
+    conwayEngine.handlePointerMove(e.pointerId, x, y);
     updateCounter();
   }
 });
 
-window.addEventListener('pointerup', () => {
+window.addEventListener('pointerup', (e) => {
   if (currentMode === 'conway') {
-    conwayEngine.handlePointerUp();
+    try {
+      canvas.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+    conwayEngine.handlePointerUp(e.pointerId);
   }
 });
 
-window.addEventListener('pointercancel', () => {
+window.addEventListener('pointercancel', (e) => {
   if (currentMode === 'conway') {
-    conwayEngine.handlePointerUp();
+    try {
+      canvas.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+    conwayEngine.handlePointerUp(e.pointerId);
   }
 });
+
+// Wheel zoom in Conway
+canvas.addEventListener('wheel', (e) => {
+  if (currentMode === 'conway') {
+    e.preventDefault();
+    const { x, y } = getCanvasCoords(e);
+    conwayEngine.handleWheel(x, y, e.deltaY);
+    updateZoomDisplay();
+  }
+}, { passive: false });
 
 // ═══ HUD BUTTONS ═══
 // Pause Button
@@ -160,7 +179,7 @@ btnAudio.addEventListener('click', () => {
   saveSettings();
 });
 
-// ═══ CONWAY QUICK TOOLBAR ═══
+// ═══ CONWAY TOOLBAR & ZOOM & TOOLS ═══
 document.getElementById('btn-conway-step').addEventListener('click', () => {
   conwayEngine.step();
   updateCounter();
@@ -176,13 +195,90 @@ document.getElementById('btn-conway-clear').addEventListener('click', () => {
   updateCounter();
 });
 
-// Presets Dropdown
+// Conway Tools: Draw vs Pan
+const btnToolDraw = document.getElementById('btn-conway-tool-draw');
+const btnToolPan = document.getElementById('btn-conway-tool-pan');
+
+function setConwayTool(tool) {
+  conwayEngine.setTool(tool);
+  if (btnToolDraw) btnToolDraw.classList.toggle('active', tool === 'draw');
+  if (btnToolPan) btnToolPan.classList.toggle('active', tool === 'pan');
+}
+
+if (btnToolDraw) btnToolDraw.addEventListener('click', () => setConwayTool('draw'));
+if (btnToolPan) btnToolPan.addEventListener('click', () => setConwayTool('pan'));
+
+// Conway Zoom controls
+const btnZoomOut = document.getElementById('btn-conway-zoom-out');
+const btnZoomReset = document.getElementById('btn-conway-zoom-reset');
+const btnZoomIn = document.getElementById('btn-conway-zoom-in');
+
+function updateZoomDisplay() {
+  if (btnZoomReset) {
+    btnZoomReset.textContent = `${conwayEngine.zoom.toFixed(1)}x`;
+  }
+}
+
+if (btnZoomOut) {
+  btnZoomOut.addEventListener('click', () => {
+    conwayEngine.zoomOut();
+    updateZoomDisplay();
+  });
+}
+
+if (btnZoomIn) {
+  btnZoomIn.addEventListener('click', () => {
+    conwayEngine.zoomIn();
+    updateZoomDisplay();
+  });
+}
+
+if (btnZoomReset) {
+  btnZoomReset.addEventListener('click', () => {
+    conwayEngine.resetView();
+    updateZoomDisplay();
+  });
+}
+
+// Zen Pattern Rain
+const btnConwayRain = document.getElementById('btn-conway-rain');
+const optConwayRainToggle = document.getElementById('opt-conway-rain-toggle');
+
+function setRainActive(active) {
+  conwayEngine.rainEnabled = active;
+  if (btnConwayRain) btnConwayRain.classList.toggle('active', active);
+  if (optConwayRainToggle) optConwayRainToggle.checked = active;
+  saveSettings();
+}
+
+if (btnConwayRain) {
+  btnConwayRain.addEventListener('click', () => {
+    setRainActive(!conwayEngine.rainEnabled);
+  });
+}
+
+if (optConwayRainToggle) {
+  optConwayRainToggle.addEventListener('change', () => {
+    setRainActive(optConwayRainToggle.checked);
+  });
+}
+
+// Presets Dropdown / Popover
+const btnClosePresets = document.getElementById('btn-close-presets');
+
 btnPresets.addEventListener('click', (e) => {
   e.stopPropagation();
   presetMenu.classList.toggle('hidden');
 });
 
-document.querySelectorAll('.preset-item').forEach(btn => {
+if (btnClosePresets) {
+  btnClosePresets.addEventListener('click', (e) => {
+    e.stopPropagation();
+    presetMenu.classList.add('hidden');
+  });
+}
+
+document.querySelectorAll('.preset-card-item').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const preset = btn.dataset.preset;
@@ -193,16 +289,31 @@ document.querySelectorAll('.preset-item').forEach(btn => {
 });
 
 document.addEventListener('click', (e) => {
-  if (!presetMenu.contains(e.target) && e.target !== btnPresets) {
+  if (!presetMenu.contains(e.target) && !btnPresets.contains(e.target)) {
     presetMenu.classList.add('hidden');
   }
 });
 
-// ═══ SETTINGS MODAL ═══
+// ═══ CONTEXTUAL SETTINGS MODAL ═══
 const modalOverlay = document.getElementById('modal-overlay');
-document.getElementById('btn-settings').addEventListener('click', () => {
+const modalTitle = document.getElementById('modal-title');
+const groupBouncing = document.getElementById('settings-group-bouncing');
+const groupConway = document.getElementById('settings-group-conway');
+
+function openSettingsModal() {
+  if (currentMode === 'bouncing') {
+    if (modalTitle) modalTitle.textContent = 'Configuración • Bolas Zen';
+    if (groupBouncing) groupBouncing.classList.remove('hidden');
+    if (groupConway) groupConway.classList.add('hidden');
+  } else {
+    if (modalTitle) modalTitle.textContent = 'Configuración • Juego de la Vida';
+    if (groupBouncing) groupBouncing.classList.add('hidden');
+    if (groupConway) groupConway.classList.remove('hidden');
+  }
   modalOverlay.classList.remove('hidden');
-});
+}
+
+document.getElementById('btn-settings').addEventListener('click', openSettingsModal);
 
 document.getElementById('btn-close-modal').addEventListener('click', () => {
   modalOverlay.classList.add('hidden');
@@ -212,6 +323,18 @@ modalOverlay.addEventListener('mousedown', (e) => {
   if (e.target === modalOverlay) {
     modalOverlay.classList.add('hidden');
   }
+});
+
+// Theme Buttons (Dark / Light)
+const themeBtns = document.querySelectorAll('.theme-btn');
+themeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    themeBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const theme = btn.dataset.theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    saveSettings();
+  });
 });
 
 // ═══ BOUNCING CONTROLS ═══
@@ -508,36 +631,37 @@ document.addEventListener('visibilitychange', async () => {
 function saveSettings() {
   const settings = {
     mode: currentMode,
-    gravity: document.getElementById('opt-gravity').checked,
-    gravityVal: document.getElementById('opt-gravity-val').value,
-    collision: document.getElementById('opt-collision').checked,
+    gravity: document.getElementById('opt-gravity')?.checked ?? true,
+    gravityVal: document.getElementById('opt-gravity-val')?.value ?? '20',
+    collision: document.getElementById('opt-collision')?.checked ?? false,
     effect: document.querySelector('.effect-btn.active')?.dataset.effect || 'none',
-    spawnProb: document.getElementById('opt-spawn-prob').value,
-    disappearProb: document.getElementById('opt-disappear-prob').value,
-    disappear: document.getElementById('opt-disappear').checked,
-    bounces: document.getElementById('opt-bounces').value,
-    speed: document.getElementById('opt-speed').value,
-    sizeMin: document.getElementById('opt-size-min').value,
-    sizeMax: document.getElementById('opt-size-max').value,
-    darkmode: document.getElementById('opt-darkmode').checked,
+    spawnProb: document.getElementById('opt-spawn-prob')?.value ?? '0',
+    disappearProb: document.getElementById('opt-disappear-prob')?.value ?? '20',
+    disappear: document.getElementById('opt-disappear')?.checked ?? false,
+    bounces: document.getElementById('opt-bounces')?.value ?? '5',
+    speed: document.getElementById('opt-speed')?.value ?? '5',
+    sizeMin: document.getElementById('opt-size-min')?.value ?? '8',
+    sizeMax: document.getElementById('opt-size-max')?.value ?? '18',
+    theme: document.documentElement.getAttribute('data-theme') || 'dark',
     palette: document.querySelector('.palette-btn.active')?.dataset.palette || 'neon',
-    trail: document.getElementById('opt-trail').checked,
-    glow: document.getElementById('opt-glow').value,
-    borderThick: document.getElementById('opt-border-thick').value,
-    autospawn: document.getElementById('opt-autospawn').checked,
-    autospawnSpeed: document.getElementById('opt-autospawn-speed').value,
-    wakelock: document.getElementById('opt-wakelock').checked,
-    battle: document.getElementById('opt-battle').checked,
-    battleHealth: document.getElementById('opt-battle-health').value,
+    trail: document.getElementById('opt-trail')?.checked ?? true,
+    glow: document.getElementById('opt-glow')?.value ?? '12',
+    borderThick: document.getElementById('opt-border-thick')?.value ?? '2',
+    autospawn: document.getElementById('opt-autospawn')?.checked ?? false,
+    autospawnSpeed: document.getElementById('opt-autospawn-speed')?.value ?? '5',
+    wakelock: document.getElementById('opt-wakelock')?.checked ?? false,
+    battle: document.getElementById('opt-battle')?.checked ?? false,
+    battleHealth: document.getElementById('opt-battle-health')?.value ?? '5',
     // Audio & Conway
-    sound: document.getElementById('opt-sound').checked,
-    volume: document.getElementById('opt-volume').value,
-    spatial: document.getElementById('opt-spatial').checked,
+    sound: document.getElementById('opt-sound')?.checked ?? true,
+    volume: document.getElementById('opt-volume')?.value ?? '50',
+    spatial: document.getElementById('opt-spatial')?.checked ?? true,
     instrument: document.querySelector('.instrument-btn.active')?.dataset.instrument || 'bells',
-    conwaySpeed: document.getElementById('opt-conway-speed').value,
-    conwaySize: document.getElementById('opt-conway-size').value,
-    conwayWrap: document.getElementById('opt-conway-wrap').checked,
-    conwayTrail: document.getElementById('opt-conway-trail').checked
+    conwaySpeed: document.getElementById('opt-conway-speed')?.value ?? '12',
+    conwaySize: document.getElementById('opt-conway-size')?.value ?? '14',
+    conwayWrap: document.getElementById('opt-conway-wrap')?.checked ?? true,
+    conwayTrail: document.getElementById('opt-conway-trail')?.checked ?? true,
+    conwayRain: conwayEngine.rainEnabled
   };
   localStorage.setItem('zenBallsSettings', JSON.stringify(settings));
 }
@@ -579,7 +703,15 @@ function loadSettings() {
     setVal('opt-speed', s.speed);
     setVal('opt-size-min', s.sizeMin);
     setVal('opt-size-max', s.sizeMax);
-    setCheck('opt-darkmode', s.darkmode);
+
+    if (s.theme) {
+      document.documentElement.setAttribute('data-theme', s.theme);
+      const tBtn = document.querySelector(`.theme-btn[data-theme="${s.theme}"]`);
+      if (tBtn) {
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        tBtn.classList.add('active');
+      }
+    }
 
     if (s.palette) {
       const pBtn = document.querySelector(`.palette-btn[data-palette="${s.palette}"]`);
@@ -611,6 +743,10 @@ function loadSettings() {
     setVal('opt-conway-size', s.conwaySize);
     setCheck('opt-conway-wrap', s.conwayWrap);
     setCheck('opt-conway-trail', s.conwayTrail);
+
+    if (s.conwayRain !== undefined) {
+      setRainActive(s.conwayRain);
+    }
 
     if (s.mode && s.mode !== currentMode) {
       setMode(s.mode);

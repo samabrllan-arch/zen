@@ -1,11 +1,114 @@
 // ═══════════════════════════════════════════════════════
-// CONWAY'S GAME OF LIFE — "Zen Life"
-// A meditative cellular automaton simulation with
-// phosphor decay trails, glowing aesthetic cells,
-// interactive drawing, and iconic presets.
+// CONWAY'S GAME OF LIFE — "Zen Life 20/10"
+// High-performance cellular automaton engine with:
+// - Hardware-accelerated offscreen sprite caching
+// - Smooth Zoom & Pan (pinch-to-zoom, wheel, pan tool)
+// - Zen Auto-Pattern Rain (Lluvia de Patrones)
+// - Viewport culling for 120 FPS mobile performance
+// - Multi-tool support (Draw vs Pan)
 // ═══════════════════════════════════════════════════════
 
 import { zenAudio } from '../utils/audio.js';
+
+export const PATTERNS = {
+  glider: {
+    name: 'Planeador (Glider)',
+    desc: 'Viajero diagonal eterno',
+    icon: '🛸',
+    grid: [
+      '.O.',
+      '..O',
+      'OOO'
+    ]
+  },
+  lwss: {
+    name: 'Nave Ligera (LWSS)',
+    desc: 'Nave espacial horizontal rápida',
+    icon: '🛰️',
+    grid: [
+      '.O..O',
+      'O....',
+      'O...O',
+      'OOOO.'
+    ]
+  },
+  pulsar: {
+    name: 'Púlsar (Oscilador)',
+    desc: 'Fascinante flor pulsante de período 3',
+    icon: '💫',
+    grid: [
+      '..OOO...OOO..',
+      '.............',
+      'O....O.O....O',
+      'O....O.O....O',
+      'O....O.O....O',
+      '..OOO...OOO..',
+      '.............',
+      '..OOO...OOO..',
+      'O....O.O....O',
+      'O....O.O....O',
+      'O....O.O....O',
+      '.............',
+      '..OOO...OOO..'
+    ]
+  },
+  gun: {
+    name: 'Cañón de Gosper',
+    desc: 'Fábrica infinita de planeadores',
+    icon: '🚀',
+    grid: [
+      '........................O...........',
+      '......................O.O...........',
+      '............OO......OO............OO',
+      '...........O...O....OO............OO',
+      'OO........O.....O...OO..............',
+      'OO........O...O.OO....O.O...........',
+      '..........O.....O.......O...........',
+      '...........O...O....................',
+      '............OO......................'
+    ]
+  },
+  pentadecathlon: {
+    name: 'Pentadecathlon (P15)',
+    desc: 'Oscilador rítmico de 15 fases',
+    icon: '⚡',
+    grid: [
+      '..O......O..',
+      'OO.OOOOOO.OO',
+      '..O......O..'
+    ]
+  },
+  acorn: {
+    name: 'Bellota (Acorn)',
+    desc: 'Semilla mágica que florece por 5206 ciclos',
+    icon: '🌱',
+    grid: [
+      '.O.....',
+      '...O...',
+      'OO..OOO'
+    ]
+  },
+  toad: {
+    name: 'Sapo (Toad)',
+    desc: 'Oscilador clásico de 2 fases',
+    icon: '🐸',
+    grid: [
+      '.OOO',
+      'OOO.'
+    ]
+  },
+  beacon: {
+    name: 'Faro (Beacon)',
+    desc: 'Faro intermitente zen',
+    icon: '🏮',
+    grid: [
+      'OO..',
+      'OO..',
+      '..OO',
+      '..OO'
+    ]
+  }
+};
 
 const PALETTES = {
   neon: (ratio) => `hsl(${280 + ratio * 160}, 100%, 65%)`,
@@ -40,22 +143,108 @@ export class ConwayMode {
     this.lastStepTime = 0;
     this.wrap = true; // toroidal universe
 
+    // Camera: Zoom & Pan
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.minZoom = 0.35;
+    this.maxZoom = 4.0;
+
+    // Active tool: 'draw' | 'pan'
+    this.tool = 'draw';
+
+    // Zen Pattern Rain (Lluvia de Patrones)
+    this.rainEnabled = false;
+    this.lastRainTime = 0;
+    this.rainIntervalMs = 3800; // spawn pattern every 3.8s
+
     // Aesthetics
     this.palette = 'neon';
     this.showTrail = true;
     this.glowIntensity = 10;
     this.soundEnabled = true;
 
-    // Drawing state
-    this.isPointerDown = false;
+    // Sprite Caches for 60-120 FPS hardware blit
+    this.cellSpriteCache = []; // pre-rendered offscreen canvases for cell ages
+    this.trailSprite = null;   // pre-rendered offscreen canvas for trail glow
+    this.initSpriteCache();
+
+    // Touch & Pointer State
+    this.activePointers = new Map();
+    this.lastPinchDist = 0;
+    this.lastPinchMid = null;
     this.drawMode = 1; // 1 = paint alive, 0 = erase
     this.lastDrawnCell = null;
+    this.isSinglePointerDrag = false;
+    this.lastPanPointer = null;
+
+    // Spontaneous spawns visual ripple
+    this.ripples = [];
+  }
+
+  // Pre-render cell textures with baked glow into small offscreen canvases
+  initSpriteCache() {
+    this.cellSpriteCache = [];
+    const colorFn = PALETTES[this.palette] || PALETTES.neon;
+    const spriteSize = 48; // crisp high-DPI sprite
+    const center = spriteSize / 2;
+    const baseRadius = 14;
+
+    for (let i = 0; i < 12; i++) {
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = spriteSize;
+      offCanvas.height = spriteSize;
+      const oCtx = offCanvas.getContext('2d');
+
+      const ageRatio = Math.min(1, i / 10);
+      const col = colorFn(ageRatio);
+
+      // Baked soft glow
+      const grad = oCtx.createRadialGradient(center, center, baseRadius * 0.3, center, center, baseRadius * 1.55);
+      grad.addColorStop(0, col);
+      grad.addColorStop(0.65, col);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      oCtx.fillStyle = grad;
+      oCtx.beginPath();
+      oCtx.arc(center, center, baseRadius * 1.55, 0, Math.PI * 2);
+      oCtx.fill();
+
+      // Solid cell body
+      oCtx.fillStyle = col;
+      oCtx.beginPath();
+      oCtx.arc(center, center, baseRadius, 0, Math.PI * 2);
+      oCtx.fill();
+
+      // Gleam highlight
+      oCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      oCtx.beginPath();
+      oCtx.arc(center - baseRadius * 0.25, center - baseRadius * 0.25, baseRadius * 0.35, 0, Math.PI * 2);
+      oCtx.fill();
+
+      this.cellSpriteCache.push(offCanvas);
+    }
+
+    // Pre-render phosphor trail dot
+    const tCanvas = document.createElement('canvas');
+    tCanvas.width = 32;
+    tCanvas.height = 32;
+    const tCtx = tCanvas.getContext('2d');
+    const tCenter = 16;
+    const tGrad = tCtx.createRadialGradient(tCenter, tCenter, 2, tCenter, tCenter, 14);
+    tGrad.addColorStop(0, colorFn(0.5));
+    tGrad.addColorStop(0.8, colorFn(0.5));
+    tGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    tCtx.fillStyle = tGrad;
+    tCtx.beginPath();
+    tCtx.arc(tCenter, tCenter, 14, 0, Math.PI * 2);
+    tCtx.fill();
+    this.trailSprite = tCanvas;
   }
 
   start() {
     this.isActive = true;
     this.initGrid();
-    // Seed with a soothing central pattern if empty
     if (this.aliveCount === 0) {
       this.loadPreset('pulsar');
     }
@@ -90,7 +279,7 @@ export class ConwayMode {
     this.trailGrid = new Float32Array(size);
     this.ageGrid = new Uint16Array(size);
 
-    // If resizing with an existing grid, copy cells centered
+    // If resizing, preserve centered cells
     if (oldGrid && oldCols && oldRows) {
       const offsetX = Math.floor((this.cols - oldCols) / 2);
       const offsetY = Math.floor((this.rows - oldRows) / 2);
@@ -114,6 +303,41 @@ export class ConwayMode {
     }
   }
 
+  // ═══ CAMERA / ZOOM & PAN CONTROLS ═══
+  zoomAt(deltaFactor, focalX, focalY) {
+    const oldZoom = this.zoom;
+    const newZoom = Math.max(this.minZoom, Math.min(this.maxZoom, oldZoom * deltaFactor));
+    if (Math.abs(newZoom - oldZoom) < 0.001) return;
+
+    // Anchor around focal point so content under cursor/pinch stays fixed
+    this.panX = focalX - (focalX - this.panX) * (newZoom / oldZoom);
+    this.panY = focalY - (focalY - this.panY) * (newZoom / oldZoom);
+    this.zoom = newZoom;
+  }
+
+  zoomIn() {
+    this.zoomAt(1.25, this.canvas.width / 2, this.canvas.height / 2);
+  }
+
+  zoomOut() {
+    this.zoomAt(0.8, this.canvas.width / 2, this.canvas.height / 2);
+  }
+
+  resetView() {
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+  }
+
+  setTool(tool) {
+    this.tool = tool; // 'draw' | 'pan'
+  }
+
+  toggleRain() {
+    this.rainEnabled = !this.rainEnabled;
+    return this.rainEnabled;
+  }
+
   setCellSize(size) {
     this.cellSize = Math.max(8, Math.min(32, size));
     this.initGrid();
@@ -129,6 +353,7 @@ export class ConwayMode {
 
   setPalette(p) {
     this.palette = p;
+    this.initSpriteCache();
   }
 
   setTrail(on) {
@@ -151,6 +376,7 @@ export class ConwayMode {
     this.ageGrid.fill(0);
     this.generation = 0;
     this.aliveCount = 0;
+    this.ripples = [];
   }
 
   randomize(density = 0.2) {
@@ -169,39 +395,21 @@ export class ConwayMode {
     zenAudio.playLifeChime(this.aliveCount, total);
   }
 
-  // Pointer drawing methods
-  handlePointerDown(clientX, clientY) {
-    const cell = this._screenToCell(clientX, clientY);
-    if (!cell) return;
-    this.isPointerDown = true;
-    
-    // Toggle: if clicked an alive cell, switch to erase; otherwise paint
-    const idx = cell.r * this.cols + cell.c;
-    this.drawMode = this.grid[idx] ? 0 : 1;
-    this._setCell(cell.c, cell.r, this.drawMode);
-    this.lastDrawnCell = cell;
-  }
-
-  handlePointerMove(clientX, clientY) {
-    if (!this.isPointerDown) return;
-    const cell = this._screenToCell(clientX, clientY);
-    if (!cell) return;
-    if (this.lastDrawnCell && this.lastDrawnCell.c === cell.c && this.lastDrawnCell.r === cell.r) {
-      return;
-    }
-    this._setCell(cell.c, cell.r, this.drawMode);
-    this.lastDrawnCell = cell;
-  }
-
-  handlePointerUp() {
-    this.isPointerDown = false;
-    this.lastDrawnCell = null;
-  }
-
-  _screenToCell(x, y) {
+  // ═══ SCREEN <-> CELL TRANSFORMATION ═══
+  screenToCell(screenX, screenY) {
     if (!this.cols || !this.rows) return null;
-    const c = Math.floor(x / this.cellSize);
-    const r = Math.floor(y / this.cellSize);
+    const effCell = this.cellSize * this.zoom;
+    const worldX = (screenX - this.panX);
+    const worldY = (screenY - this.panY);
+    let c = Math.floor(worldX / effCell);
+    let r = Math.floor(worldY / effCell);
+
+    if (this.wrap) {
+      c = ((c % this.cols) + this.cols) % this.cols;
+      r = ((r % this.rows) + this.rows) % this.rows;
+      return { c, r };
+    }
+
     if (c < 0 || c >= this.cols || r < 0 || r >= this.rows) return null;
     return { c, r };
   }
@@ -222,7 +430,179 @@ export class ConwayMode {
     }
   }
 
-  // Conway Step (B3/S23)
+  // ═══ POINTER & TOUCH INTERACTIONS ═══
+  handlePointerDown(pointerId, screenX, screenY) {
+    this.activePointers.set(pointerId, { x: screenX, y: screenY });
+
+    if (this.activePointers.size === 1) {
+      this.lastPanPointer = { x: screenX, y: screenY };
+
+      if (this.tool === 'pan') {
+        this.isSinglePointerDrag = true;
+      } else {
+        // Draw mode
+        const cell = this.screenToCell(screenX, screenY);
+        if (cell) {
+          const idx = cell.r * this.cols + cell.c;
+          this.drawMode = this.grid[idx] ? 0 : 1;
+          this._setCell(cell.c, cell.r, this.drawMode);
+          this.lastDrawnCell = cell;
+        }
+      }
+    } else if (this.activePointers.size === 2) {
+      // 2 fingers = pinch-to-zoom & 2-finger pan
+      const pts = Array.from(this.activePointers.values());
+      this.lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      this.lastPinchMid = {
+        x: (pts[0].x + pts[1].x) / 2,
+        y: (pts[0].y + pts[1].y) / 2
+      };
+      this.isSinglePointerDrag = false;
+      this.lastDrawnCell = null;
+    }
+  }
+
+  handlePointerMove(pointerId, screenX, screenY) {
+    if (!this.activePointers.has(pointerId)) return;
+    this.activePointers.set(pointerId, { x: screenX, y: screenY });
+
+    if (this.activePointers.size === 2) {
+      // Two-finger pinch-to-zoom & two-finger pan
+      const pts = Array.from(this.activePointers.values());
+      const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const currentMid = {
+        x: (pts[0].x + pts[1].x) / 2,
+        y: (pts[0].y + pts[1].y) / 2
+      };
+
+      if (this.lastPinchDist > 0 && currentDist > 0) {
+        const factor = currentDist / this.lastPinchDist;
+        this.zoomAt(factor, currentMid.x, currentMid.y);
+      }
+
+      if (this.lastPinchMid) {
+        this.panX += (currentMid.x - this.lastPinchMid.x);
+        this.panY += (currentMid.y - this.lastPinchMid.y);
+      }
+
+      this.lastPinchDist = currentDist;
+      this.lastPinchMid = currentMid;
+      return;
+    }
+
+    if (this.activePointers.size === 1) {
+      if (this.tool === 'pan' || this.isSinglePointerDrag) {
+        if (this.lastPanPointer) {
+          this.panX += screenX - this.lastPanPointer.x;
+          this.panY += screenY - this.lastPanPointer.y;
+          this.lastPanPointer = { x: screenX, y: screenY };
+        }
+      } else if (this.tool === 'draw') {
+        const cell = this.screenToCell(screenX, screenY);
+        if (!cell) return;
+        if (this.lastDrawnCell && this.lastDrawnCell.c === cell.c && this.lastDrawnCell.r === cell.r) {
+          return;
+        }
+        this._setCell(cell.c, cell.r, this.drawMode);
+        this.lastDrawnCell = cell;
+      }
+    }
+  }
+
+  handlePointerUp(pointerId) {
+    this.activePointers.delete(pointerId);
+    if (this.activePointers.size === 0) {
+      this.lastDrawnCell = null;
+      this.isSinglePointerDrag = false;
+      this.lastPanPointer = null;
+      this.lastPinchDist = 0;
+      this.lastPinchMid = null;
+    } else if (this.activePointers.size === 1) {
+      const remaining = Array.from(this.activePointers.values())[0];
+      this.lastPanPointer = { x: remaining.x, y: remaining.y };
+      this.lastPinchDist = 0;
+      this.lastPinchMid = null;
+    }
+  }
+
+  handleWheel(screenX, screenY, deltaY) {
+    const factor = deltaY < 0 ? 1.15 : 0.87;
+    this.zoomAt(factor, screenX, screenY);
+  }
+
+  // ═══ PATTERN STAMPING & ZEN AUTO-SPAWN ═══
+  stampPattern(key, startC, startR) {
+    const p = PATTERNS[key];
+    if (!p) return;
+    const pattern = p.grid;
+
+    for (let dr = 0; dr < pattern.length; dr++) {
+      const row = pattern[dr];
+      for (let dc = 0; dc < row.length; dc++) {
+        if (row[dc] === 'O' || row[dc] === '1') {
+          let c = startC + dc;
+          let r = startR + dr;
+          if (this.wrap) {
+            c = ((c % this.cols) + this.cols) % this.cols;
+            r = ((r % this.rows) + this.rows) % this.rows;
+          }
+          this._setCell(c, r, 1);
+        }
+      }
+    }
+
+    // Add visual glowing ripple
+    const effCell = this.cellSize * this.zoom;
+    const screenX = (startC + pattern[0].length / 2) * effCell + this.panX;
+    const screenY = (startR + pattern.length / 2) * effCell + this.panY;
+    this.ripples.push({
+      x: screenX,
+      y: screenY,
+      radius: 4,
+      maxRadius: Math.max(25, pattern[0].length * effCell),
+      alpha: 1.0
+    });
+  }
+
+  // Load preset in center (or clear first if desired)
+  loadPreset(name) {
+    if (name === 'random') {
+      this.randomize(0.2);
+      return;
+    }
+    this.clear();
+    const p = PATTERNS[name];
+    if (!p) return;
+
+    const midC = Math.floor(this.cols / 2 - p.grid[0].length / 2);
+    const midR = Math.floor(this.rows / 2 - p.grid.length / 2);
+    this.stampPattern(name, midC, midR);
+
+    zenAudio.playLifeChime(this.aliveCount, this.cols * this.rows);
+  }
+
+  // Spawns a random pattern gently anywhere on the board (Zen Pattern Rain)
+  spawnRandomPattern() {
+    const keys = ['glider', 'lwss', 'pulsar', 'toad', 'beacon', 'acorn'];
+    const choice = keys[Math.floor(Math.random() * keys.length)];
+    const p = PATTERNS[choice];
+    if (!p) return;
+
+    // Pick coordinates with margin
+    const margin = 4;
+    const maxC = Math.max(margin, this.cols - p.grid[0].length - margin);
+    const maxR = Math.max(margin, this.rows - p.grid.length - margin);
+    const c = Math.floor(margin + Math.random() * (maxC - margin));
+    const r = Math.floor(margin + Math.random() * (maxR - margin));
+
+    this.stampPattern(choice, c, r);
+
+    if (this.soundEnabled) {
+      zenAudio.playLifeChime(15, this.cols * this.rows);
+    }
+  }
+
+  // ═══ SIMULATION STEP (B3/S23) ═══
   step() {
     if (!this.grid) return;
     const cols = this.cols;
@@ -267,7 +647,6 @@ export class ConwayMode {
         const state = grid[idx];
 
         if (state === 1) {
-          // Live cell survives with 2 or 3 neighbors
           if (neighbors === 2 || neighbors === 3) {
             next[idx] = 1;
             age[idx] = Math.min(100, age[idx] + 1);
@@ -275,10 +654,9 @@ export class ConwayMode {
           } else {
             next[idx] = 0;
             age[idx] = 0;
-            trail[idx] = 1.0; // leave phosphor decay
+            trail[idx] = 1.0; // Phosphor decay
           }
         } else {
-          // Dead cell reproduces with exactly 3 neighbors
           if (neighbors === 3) {
             next[idx] = 1;
             age[idx] = 1;
@@ -297,8 +675,8 @@ export class ConwayMode {
     this.aliveCount = aliveNow;
     this.generation++;
 
-    // Ambient chime if enabled and interesting activity
-    if (this.soundEnabled && births > 0 && this.generation % 4 === 0) {
+    // Ambient chime if enabled
+    if (this.soundEnabled && births > 0 && this.generation % 5 === 0) {
       zenAudio.playLifeChime(aliveNow, cols * rows);
     }
   }
@@ -308,8 +686,8 @@ export class ConwayMode {
     this.initGrid();
 
     // Decay phosphor trails
-    if (this.trailGrid) {
-      const decay = 0.04;
+    if (this.showTrail && this.trailGrid) {
+      const decay = 0.045;
       for (let i = 0; i < this.trailGrid.length; i++) {
         if (this.trailGrid[i] > 0) {
           this.trailGrid[i] = Math.max(0, this.trailGrid[i] - decay);
@@ -317,9 +695,28 @@ export class ConwayMode {
       }
     }
 
+    // Update visual ripples
+    for (let i = this.ripples.length - 1; i >= 0; i--) {
+      const rip = this.ripples[i];
+      rip.radius += 1.8;
+      rip.alpha -= 0.035;
+      if (rip.alpha <= 0 || rip.radius >= rip.maxRadius) {
+        this.ripples.splice(i, 1);
+      }
+    }
+
+    const now = performance.now();
+
+    // Zen Pattern Rain
+    if (this.rainEnabled && !this.isPaused) {
+      if (now - this.lastAutoSpawn >= this.rainIntervalMs) {
+        this.spawnRandomPattern();
+        this.lastAutoSpawn = now;
+      }
+    }
+
     // Step generation on interval
     if (!this.isPaused) {
-      const now = performance.now();
       const interval = 1000 / this.speed;
       if (now - this.lastStepTime >= interval) {
         this.step();
@@ -328,198 +725,103 @@ export class ConwayMode {
     }
   }
 
+  // ═══ ULTRA-OPTIMIZED HARDWARE-ACCELERATED RENDER LOOP ═══
   draw() {
     if (!this.isActive || !this.grid) return;
     const ctx = this.ctx;
-    const cs = this.cellSize;
     const cols = this.cols;
     const rows = this.rows;
     const grid = this.grid;
     const trail = this.trailGrid;
     const age = this.ageGrid;
-    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
 
-    const colorFn = PALETTES[this.palette] || PALETTES.neon;
-    const cellRadius = Math.max(2, cs * 0.38);
+    const effCell = this.cellSize * this.zoom;
+    const panX = this.panX;
+    const panY = this.panY;
+    const viewW = this.canvas.width;
+    const viewH = this.canvas.height;
 
-    // Subtle grid lines for zen minimalist alignment
-    ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.022)' : 'rgba(0, 0, 0, 0.035)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let c = 0; c <= cols; c++) {
-      const x = c * cs;
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, rows * cs);
+    // Viewport Culling: Compute visible column & row range
+    const minCol = Math.max(0, Math.floor((-panX) / effCell));
+    const maxCol = Math.min(cols, Math.ceil((viewW - panX) / effCell));
+    const minRow = Math.max(0, Math.floor((-panY) / effCell));
+    const maxRow = Math.min(rows, Math.ceil((viewH - panY) / effCell));
+
+    // Subtle aesthetic grid lines
+    if (effCell >= 8) {
+      const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.025)' : 'rgba(0, 0, 0, 0.04)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+
+      for (let c = minCol; c <= maxCol; c++) {
+        const x = Math.round(c * effCell + panX) + 0.5;
+        ctx.moveTo(x, Math.max(0, minRow * effCell + panY));
+        ctx.lineTo(x, Math.min(viewH, maxRow * effCell + panY));
+      }
+      for (let r = minRow; r <= maxRow; r++) {
+        const y = Math.round(r * effCell + panY) + 0.5;
+        ctx.moveTo(Math.max(0, minCol * effCell + panX), y);
+        ctx.lineTo(Math.min(viewW, maxCol * effCell + panX), y);
+      }
+      ctx.stroke();
     }
-    for (let r = 0; r <= rows; r++) {
-      const y = r * cs;
-      ctx.moveTo(0, y);
-      ctx.lineTo(cols * cs, y);
-    }
-    ctx.stroke();
 
-    // Draw Phosphor Trails (decaying dead cells)
-    if (this.showTrail) {
-      for (let r = 0; r < rows; r++) {
+    // 1. Draw Phosphor Trails (using cached soft trail texture)
+    if (this.showTrail && this.trailSprite) {
+      const trailDrawSize = effCell * 1.15;
+      const trailOffset = (trailDrawSize - effCell) / 2;
+
+      for (let r = minRow; r < maxRow; r++) {
         const rowOffset = r * cols;
-        for (let c = 0; c < cols; c++) {
+        for (let c = minCol; c < maxCol; c++) {
           const idx = rowOffset + c;
           const trVal = trail[idx];
-          if (trVal > 0.02 && grid[idx] === 0) {
-            const x = c * cs + cs / 2;
-            const y = r * cs + cs / 2;
-            const col = colorFn(0.5);
-            ctx.fillStyle = col;
-            ctx.globalAlpha = trVal * 0.28;
-            ctx.beginPath();
-            ctx.arc(x, y, cellRadius * (0.4 + trVal * 0.5), 0, Math.PI * 2);
-            ctx.fill();
+          if (trVal > 0.04 && grid[idx] === 0) {
+            ctx.globalAlpha = trVal * 0.35;
+            const x = c * effCell + panX - trailOffset;
+            const y = r * effCell + panY - trailOffset;
+            ctx.drawImage(this.trailSprite, x, y, trailDrawSize, trailDrawSize);
           }
         }
       }
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1.0;
     }
 
-    // Draw Living Cells with Glow & Heatmap Age
-    if (this.glowIntensity > 0) {
-      ctx.shadowBlur = this.glowIntensity;
-    }
+    // 2. Draw Living Cells (Blitting pre-rendered glowing sprites - ZERO shadowBlur cost!)
+    const spriteCount = this.cellSpriteCache.length;
+    const drawSize = effCell * 1.45;
+    const drawOffset = (drawSize - effCell) / 2;
 
-    for (let r = 0; r < rows; r++) {
+    for (let r = minRow; r < maxRow; r++) {
       const rowOffset = r * cols;
-      for (let c = 0; c < cols; c++) {
+      for (let c = minCol; c < maxCol; c++) {
         const idx = rowOffset + c;
         if (grid[idx] === 1) {
-          const x = c * cs + cs / 2;
-          const y = r * cs + cs / 2;
           const cellAge = age[idx] || 1;
-          const ageRatio = Math.min(1, cellAge / 30);
-          const col = colorFn(ageRatio);
+          const spriteIdx = Math.min(spriteCount - 1, Math.floor((cellAge / 25) * (spriteCount - 1)));
+          const sprite = this.cellSpriteCache[spriteIdx];
 
-          if (this.glowIntensity > 0) {
-            ctx.shadowColor = col;
-          }
+          const x = c * effCell + panX - drawOffset;
+          const y = r * effCell + panY - drawOffset;
 
-          ctx.fillStyle = col;
-          ctx.beginPath();
-          ctx.arc(x, y, cellRadius, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Subtle bright core highlight
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-          ctx.beginPath();
-          ctx.arc(x - cellRadius * 0.2, y - cellRadius * 0.2, cellRadius * 0.35, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.drawImage(sprite, x, y, drawSize, drawSize);
         }
       }
     }
 
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = 'transparent';
-  }
-
-  // Presets catalog
-  loadPreset(name) {
-    this.clear();
-    const midC = Math.floor(this.cols / 2);
-    const midR = Math.floor(this.rows / 2);
-
-    const stamp = (pattern, startC, startR) => {
-      pattern.forEach((row, dr) => {
-        for (let dc = 0; dc < row.length; dc++) {
-          if (row[dc] === 'O' || row[dc] === '1') {
-            const c = startC + dc;
-            const r = startR + dr;
-            this._setCell(c, r, 1);
-          }
-        }
-      });
-    };
-
-    switch (name) {
-      case 'glider': {
-        const pattern = [
-          '.O.',
-          '..O',
-          'OOO'
-        ];
-        stamp(pattern, midC - 1, midR - 1);
-        break;
+    // 3. Draw Pattern Spawn Ripples
+    if (this.ripples.length > 0) {
+      ctx.save();
+      for (const rip of this.ripples) {
+        ctx.strokeStyle = PALETTES[this.palette](0.8);
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = rip.alpha;
+        ctx.beginPath();
+        ctx.arc(rip.x, rip.y, rip.radius, 0, Math.PI * 2);
+        ctx.stroke();
       }
-
-      case 'lwss': { // Lightweight Spaceship
-        const pattern = [
-          '.O..O',
-          'O....',
-          'O...O',
-          'OOOO.'
-        ];
-        stamp(pattern, midC - 2, midR - 2);
-        break;
-      }
-
-      case 'pulsar': { // Period-3 oscillator
-        const pattern = [
-          '..OOO...OOO..',
-          '.............',
-          'O....O.O....O',
-          'O....O.O....O',
-          'O....O.O....O',
-          '..OOO...OOO..',
-          '.............',
-          '..OOO...OOO..',
-          'O....O.O....O',
-          'O....O.O....O',
-          'O....O.O....O',
-          '.............',
-          '..OOO...OOO..'
-        ];
-        stamp(pattern, midC - 6, midR - 6);
-        break;
-      }
-
-      case 'gun': { // Gosper Glider Gun
-        const pattern = [
-          '........................O...........',
-          '......................O.O...........',
-          '............OO......OO............OO',
-          '...........O...O....OO............OO',
-          'OO........O.....O...OO..............',
-          'OO........O...O.OO....O.O...........',
-          '..........O.....O.......O...........',
-          '...........O...O....................',
-          '............OO......................'
-        ];
-        stamp(pattern, Math.max(2, midC - 18), Math.max(2, midR - 5));
-        break;
-      }
-
-      case 'pentadecathlon': { // Period-15 oscillator
-        const pattern = [
-          '..O......O..',
-          'OO.OOOOOO.OO',
-          '..O......O..'
-        ];
-        stamp(pattern, midC - 6, midR - 1);
-        break;
-      }
-
-      case 'acorn': { // Methuselah (5206 generations of evolution)
-        const pattern = [
-          '.O.....',
-          '...O...',
-          'OO..OOO'
-        ];
-        stamp(pattern, midC - 3, midR - 1);
-        break;
-      }
-
-      case 'random':
-      default:
-        this.randomize(0.18);
-        return;
+      ctx.restore();
     }
-
-    zenAudio.playLifeChime(this.aliveCount, this.cols * this.rows);
   }
 }
