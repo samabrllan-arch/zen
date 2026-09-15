@@ -156,7 +156,7 @@ export class ConwayMode {
     // Zen Pattern Rain (Lluvia de Patrones)
     this.rainEnabled = false;
     this.lastRainTime = 0;
-    this.rainIntervalMs = 3800; // spawn pattern every 3.8s
+    this.rainIntervalMs = 2400; // spawn pattern every 2.4s
 
     // Aesthetics
     this.palette = 'neon';
@@ -259,47 +259,117 @@ export class ConwayMode {
   }
 
   initGrid() {
-    const newCols = Math.max(10, Math.floor(this.canvas.width / this.cellSize));
-    const newRows = Math.max(10, Math.floor(this.canvas.height / this.cellSize));
+    const effCell = this.cellSize * this.zoom;
+    const minCols = Math.max(16, Math.ceil(this.canvas.width / effCell) + 8);
+    const minRows = Math.max(16, Math.ceil(this.canvas.height / effCell) + 8);
 
-    if (newCols === this.cols && newRows === this.rows && this.grid) {
+    if (this.grid) {
+      this.ensureViewportCoverage();
       return;
     }
 
-    const oldGrid = this.grid;
-    const oldCols = this.cols;
-    const oldRows = this.rows;
-
-    this.cols = newCols;
-    this.rows = newRows;
+    this.cols = minCols;
+    this.rows = minRows;
     const size = this.cols * this.rows;
 
     this.grid = new Uint8Array(size);
     this.nextGrid = new Uint8Array(size);
     this.trailGrid = new Float32Array(size);
     this.ageGrid = new Uint16Array(size);
+    this.aliveCount = 0;
+  }
 
-    // If resizing, preserve centered cells
-    if (oldGrid && oldCols && oldRows) {
-      const offsetX = Math.floor((this.cols - oldCols) / 2);
-      const offsetY = Math.floor((this.rows - oldRows) / 2);
-      let count = 0;
+  // Expands grid in any direction while preserving existing cells and exact screen positions
+  expandGrid(addLeft, addRight, addTop, addBottom) {
+    if (addLeft === 0 && addRight === 0 && addTop === 0 && addBottom === 0) return;
+    const oldCols = this.cols;
+    const oldRows = this.rows;
+    const oldGrid = this.grid;
+    const oldNext = this.nextGrid;
+    const oldTrail = this.trailGrid;
+    const oldAge = this.ageGrid;
 
+    const newCols = oldCols + addLeft + addRight;
+    const newRows = oldRows + addTop + addBottom;
+    const newSize = newCols * newRows;
+
+    const newGrid = new Uint8Array(newSize);
+    const newNext = new Uint8Array(newSize);
+    const newTrail = new Float32Array(newSize);
+    const newAge = new Uint16Array(newSize);
+
+    if (oldGrid) {
       for (let r = 0; r < oldRows; r++) {
+        const oldRowOffset = r * oldCols;
+        const newRowOffset = (r + addTop) * newCols;
         for (let c = 0; c < oldCols; c++) {
-          if (oldGrid[r * oldCols + c]) {
-            const tr = r + offsetY;
-            const tc = c + offsetX;
-            if (tr >= 0 && tr < this.rows && tc >= 0 && tc < this.cols) {
-              this.grid[tr * this.cols + tc] = 1;
-              count++;
-            }
-          }
+          const oldIdx = oldRowOffset + c;
+          const newIdx = newRowOffset + (c + addLeft);
+          newGrid[newIdx] = oldGrid[oldIdx];
+          newNext[newIdx] = oldNext[oldIdx];
+          newTrail[newIdx] = oldTrail[oldIdx];
+          newAge[newIdx] = oldAge[oldIdx];
         }
       }
-      this.aliveCount = count;
-    } else {
-      this.aliveCount = 0;
+    }
+
+    this.cols = newCols;
+    this.rows = newRows;
+    this.grid = newGrid;
+    this.nextGrid = newNext;
+    this.trailGrid = newTrail;
+    this.ageGrid = newAge;
+
+    // Compensate camera pan so existing cells don't jump on screen
+    const effCell = this.cellSize * this.zoom;
+    this.panX -= addLeft * effCell;
+    this.panY -= addTop * effCell;
+  }
+
+  // Ensures the grid dynamically covers the visible viewport and beyond as you zoom out or pan
+  ensureViewportCoverage() {
+    if (!this.canvas.width || !this.canvas.height) return;
+    const effCell = this.cellSize * this.zoom;
+    const minVisibleC = Math.floor(-this.panX / effCell);
+    const maxVisibleC = Math.ceil((this.canvas.width - this.panX) / effCell);
+    const minVisibleR = Math.floor(-this.panY / effCell);
+    const maxVisibleR = Math.ceil((this.canvas.height - this.panY) / effCell);
+
+    const margin = 8;
+    let addLeft = 0;
+    let addRight = 0;
+    let addTop = 0;
+    let addBottom = 0;
+
+    if (minVisibleC < 0) {
+      addLeft = Math.abs(minVisibleC) + margin;
+    }
+    if (maxVisibleC >= this.cols) {
+      addRight = (maxVisibleC - this.cols) + margin;
+    }
+    if (minVisibleR < 0) {
+      addTop = Math.abs(minVisibleR) + margin;
+    }
+    if (maxVisibleR >= this.rows) {
+      addBottom = (maxVisibleR - this.rows) + margin;
+    }
+
+    // Ensure total dimensions span at least full view
+    const minCols = Math.ceil(this.canvas.width / effCell) + margin * 2;
+    const minRows = Math.ceil(this.canvas.height / effCell) + margin * 2;
+    if (this.cols + addLeft + addRight < minCols) {
+      const diff = minCols - (this.cols + addLeft + addRight);
+      addLeft += Math.floor(diff / 2);
+      addRight += Math.ceil(diff / 2);
+    }
+    if (this.rows + addTop + addBottom < minRows) {
+      const diff = minRows - (this.rows + addTop + addBottom);
+      addTop += Math.floor(diff / 2);
+      addBottom += Math.ceil(diff / 2);
+    }
+
+    if (addLeft > 0 || addRight > 0 || addTop > 0 || addBottom > 0) {
+      this.expandGrid(addLeft, addRight, addTop, addBottom);
     }
   }
 
@@ -313,6 +383,9 @@ export class ConwayMode {
     this.panX = focalX - (focalX - this.panX) * (newZoom / oldZoom);
     this.panY = focalY - (focalY - this.panY) * (newZoom / oldZoom);
     this.zoom = newZoom;
+
+    // Dynamically expand grid to seamlessly fill the visible screen at the new zoom level
+    this.ensureViewportCoverage();
   }
 
   zoomIn() {
@@ -327,6 +400,7 @@ export class ConwayMode {
     this.zoom = 1.0;
     this.panX = 0;
     this.panY = 0;
+    this.ensureViewportCoverage();
   }
 
   setTool(tool) {
@@ -334,7 +408,15 @@ export class ConwayMode {
   }
 
   toggleRain() {
-    this.rainEnabled = !this.rainEnabled;
+    return this.setRain(!this.rainEnabled);
+  }
+
+  setRain(active) {
+    this.rainEnabled = active;
+    if (this.rainEnabled) {
+      this.lastRainTime = performance.now();
+      this.spawnRandomPattern(); // Immediate pleasant drop of life!
+    }
     return this.rainEnabled;
   }
 
@@ -349,6 +431,7 @@ export class ConwayMode {
 
   setWrap(wrap) {
     this.wrap = wrap;
+    this.ensureViewportCoverage();
   }
 
   setPalette(p) {
@@ -588,12 +671,27 @@ export class ConwayMode {
     const p = PATTERNS[choice];
     if (!p) return;
 
-    // Pick coordinates with margin
-    const margin = 4;
-    const maxC = Math.max(margin, this.cols - p.grid[0].length - margin);
-    const maxR = Math.max(margin, this.rows - p.grid.length - margin);
-    const c = Math.floor(margin + Math.random() * (maxC - margin));
-    const r = Math.floor(margin + Math.random() * (maxR - margin));
+    const effCell = this.cellSize * this.zoom;
+    const patW = p.grid[0].length;
+    const patH = p.grid.length;
+
+    // Target inside currently visible viewport so user always sees the pattern flourish!
+    const minVisC = Math.max(1, Math.floor(-this.panX / effCell) + 2);
+    const maxVisC = Math.min(this.cols - patW - 1, Math.ceil((this.canvas.width - this.panX) / effCell) - patW - 2);
+    const minVisR = Math.max(1, Math.floor(-this.panY / effCell) + 2);
+    const maxVisR = Math.min(this.rows - patH - 1, Math.ceil((this.canvas.height - this.panY) / effCell) - patH - 2);
+
+    let c, r;
+    if (maxVisC > minVisC && maxVisR > minVisR) {
+      c = Math.floor(minVisC + Math.random() * (maxVisC - minVisC));
+      r = Math.floor(minVisR + Math.random() * (maxVisR - minVisR));
+    } else {
+      const margin = 2;
+      const maxC = Math.max(margin, this.cols - patW - margin);
+      const maxR = Math.max(margin, this.rows - patH - margin);
+      c = Math.floor(margin + Math.random() * (maxC - margin));
+      r = Math.floor(margin + Math.random() * (maxR - margin));
+    }
 
     this.stampPattern(choice, c, r);
 
@@ -709,9 +807,9 @@ export class ConwayMode {
 
     // Zen Pattern Rain
     if (this.rainEnabled && !this.isPaused) {
-      if (now - this.lastAutoSpawn >= this.rainIntervalMs) {
+      if (now - this.lastRainTime >= this.rainIntervalMs) {
         this.spawnRandomPattern();
-        this.lastAutoSpawn = now;
+        this.lastRainTime = now;
       }
     }
 
@@ -748,9 +846,9 @@ export class ConwayMode {
     const maxRow = Math.min(rows, Math.ceil((viewH - panY) / effCell));
 
     // Subtle aesthetic grid lines
-    if (effCell >= 8) {
+    if (effCell >= 5) {
       const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.025)' : 'rgba(0, 0, 0, 0.04)';
+      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.065)';
       ctx.lineWidth = 1;
       ctx.beginPath();
 

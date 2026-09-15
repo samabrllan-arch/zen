@@ -447,7 +447,7 @@ body {
   flex-direction: column;
   box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   transform: translateY(0) scale(1);
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.35s ease, border-color 0.35s ease, color 0.3s ease;
 }
 
 .modal-overlay.hidden .modal-content {
@@ -720,6 +720,66 @@ input:checked+.track {
 
 input:checked+.track .thumb {
   transform: translateX(20px);
+}
+
+/* ─── Theme Segmented Control ─── */
+.theme-segmented-ctrl {
+  display: flex;
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  gap: 4px;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.theme-pill-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-2);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.theme-pill-btn .theme-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.theme-pill-btn:hover {
+  color: var(--text-1);
+}
+
+.theme-pill-btn.active {
+  background: var(--bg-surface);
+  color: var(--accent);
+  border-color: var(--border-hover);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+[data-theme="dark"] .theme-pill-btn.active {
+  background: #18181f;
+  color: var(--accent-2);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="light"] .theme-pill-btn.active {
+  background: #ffffff;
+  color: var(--accent);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* ─── Palette Grid (swatch previews) ─── */
@@ -1037,6 +1097,23 @@ input:focus-visible+.big-track {
   color: var(--accent);
   border-color: var(--accent);
   box-shadow: 0 0 10px var(--accent-soft);
+}
+
+#btn-conway-rain.active {
+  background: var(--jade-soft);
+  color: var(--jade);
+  border-color: var(--jade);
+  box-shadow: 0 0 14px var(--jade-soft);
+  animation: rainPulse 2s ease-in-out infinite;
+}
+
+@keyframes rainPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px var(--jade-soft);
+  }
+  50% {
+    box-shadow: 0 0 18px var(--jade);
+  }
 }
 
 .conway-btn-danger:hover {

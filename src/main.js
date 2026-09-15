@@ -245,7 +245,7 @@ const btnConwayRain = document.getElementById('btn-conway-rain');
 const optConwayRainToggle = document.getElementById('opt-conway-rain-toggle');
 
 function setRainActive(active) {
-  conwayEngine.rainEnabled = active;
+  conwayEngine.setRain(active);
   if (btnConwayRain) btnConwayRain.classList.toggle('active', active);
   if (optConwayRainToggle) optConwayRainToggle.checked = active;
   saveSettings();
@@ -325,14 +325,20 @@ modalOverlay.addEventListener('mousedown', (e) => {
   }
 });
 
-// Theme Buttons (Dark / Light)
-const themeBtns = document.querySelectorAll('.theme-btn');
-themeBtns.forEach(btn => {
+// Theme Switcher (Dark / Light)
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', theme === 'dark' ? '#0a0a0d' : '#e7eae6');
+
+  document.querySelectorAll('.theme-pill-btn, .theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+}
+
+document.querySelectorAll('.theme-pill-btn, .theme-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    themeBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const theme = btn.dataset.theme;
-    document.documentElement.setAttribute('data-theme', theme);
+    applyTheme(btn.dataset.theme);
     saveSettings();
   });
 });
@@ -715,12 +721,7 @@ function loadSettings() {
     setVal('opt-size-max', s.sizeMax);
 
     if (s.theme) {
-      document.documentElement.setAttribute('data-theme', s.theme);
-      const tBtn = document.querySelector(`.theme-btn[data-theme="${s.theme}"]`);
-      if (tBtn) {
-        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-        tBtn.classList.add('active');
-      }
+      applyTheme(s.theme);
     }
 
     if (s.palette) {
@@ -771,7 +772,7 @@ function loadSettings() {
 document.getElementById('modal-overlay').addEventListener('input', saveSettings);
 document.getElementById('modal-overlay').addEventListener('change', saveSettings);
 document.getElementById('modal-overlay').addEventListener('click', (e) => {
-  if (e.target.closest('.palette-btn') || e.target.closest('.effect-btn') || e.target.closest('.instrument-btn')) {
+  if (e.target.closest('.palette-btn') || e.target.closest('.effect-btn') || e.target.closest('.instrument-btn') || e.target.closest('.theme-pill-btn') || e.target.closest('.theme-btn')) {
     setTimeout(saveSettings, 50);
   }
 });
