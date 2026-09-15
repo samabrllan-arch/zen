@@ -30,18 +30,26 @@ window.addEventListener('keydown', unlockAudio, { passive: true });
 const ballCounter = document.getElementById('ball-counter');
 const btnPause = document.getElementById('btn-pause');
 const btnAudio = document.getElementById('btn-audio');
-const modeSwitcher = document.getElementById('mode-switcher');
-const btnModeBouncing = document.getElementById('btn-mode-bouncing');
-const btnModeConway = document.getElementById('btn-mode-conway');
 const conwayBar = document.getElementById('conway-bar');
+const bouncingBar = document.getElementById('bouncing-bar');
 const presetMenu = document.getElementById('conway-preset-menu');
 const btnPresets = document.getElementById('btn-conway-presets');
+
+// Didactic Game Selector
+const btnGameSelector = document.getElementById('btn-game-selector');
+const gameSelectorWrap = document.getElementById('game-selector-wrap');
+const gameSelectorMenu = document.getElementById('game-selector-menu');
+const btnCloseGameSelector = document.getElementById('btn-close-game-selector');
+const gameSelectorIcon = document.getElementById('game-selector-icon');
+const gameSelectorName = document.getElementById('game-selector-name');
+const gameCards = document.querySelectorAll('.game-card[data-mode]');
 
 function updateCounter() {
   if (currentMode === 'bouncing') {
     ballCounter.textContent = `${bouncingEngine.balls.length} bola${bouncingEngine.balls.length !== 1 ? 's' : ''}`;
   } else {
-    ballCounter.textContent = `Gen ${conwayEngine.generation} • ${conwayEngine.aliveCount} vivas`;
+    const m = conwayEngine.getDidacticMetrics();
+    ballCounter.textContent = `Gen ${m.generation} • ${m.alive} vivas (${m.still} est • ${m.oscillating} osc)`;
   }
 }
 
@@ -55,41 +63,88 @@ function updatePauseIcon(isPaused) {
 
 // ═══ MODE SWITCHING ═══
 function setMode(mode) {
-  if (mode === currentMode) return;
+  if (mode === currentMode) {
+    if (gameSelectorMenu) gameSelectorMenu.classList.add('hidden');
+    if (gameSelectorWrap) gameSelectorWrap.classList.remove('open');
+    return;
+  }
   currentMode = mode;
 
   if (mode === 'bouncing') {
     conwayEngine.stop();
     bouncingEngine.start();
-    btnModeBouncing.classList.add('active');
-    btnModeConway.classList.remove('active');
-    conwayBar.classList.add('hidden');
+    if (gameSelectorIcon) gameSelectorIcon.textContent = '⚪';
+    if (gameSelectorName) gameSelectorName.textContent = 'Bolas Zen';
+    if (bouncingBar) bouncingBar.classList.remove('hidden');
+    if (conwayBar) conwayBar.classList.add('hidden');
     updatePauseIcon(bouncingEngine.isPaused);
   } else {
     bouncingEngine.stop();
     conwayEngine.start();
-    btnModeConway.classList.add('active');
-    btnModeBouncing.classList.remove('active');
-    conwayBar.classList.remove('hidden');
+    if (gameSelectorIcon) gameSelectorIcon.textContent = '🧬';
+    if (gameSelectorName) gameSelectorName.textContent = 'Juego de la Vida';
+    if (bouncingBar) bouncingBar.classList.add('hidden');
+    if (conwayBar) conwayBar.classList.remove('hidden');
     updatePauseIcon(conwayEngine.isPaused);
   }
+
+  // Update card active tags in selector
+  gameCards.forEach(card => {
+    const isActive = card.dataset.mode === mode;
+    card.classList.toggle('active', isActive);
+    const tag = card.querySelector('.game-card-badge');
+    if (tag) {
+      if (isActive) {
+        tag.className = 'game-card-badge active-tag';
+        tag.textContent = 'Activo';
+      } else if (card.dataset.mode === 'conway') {
+        tag.className = 'game-card-badge didact-tag';
+        tag.textContent = 'Didáctico';
+      } else {
+        tag.className = 'game-card-badge soon-tag';
+        tag.textContent = 'Disponible';
+      }
+    }
+  });
+
+  if (gameSelectorMenu) gameSelectorMenu.classList.add('hidden');
+  if (gameSelectorWrap) gameSelectorWrap.classList.remove('open');
 
   updateCounter();
   saveSettings();
 }
 
-const onModeBtnTouch = (mode, e) => {
-  if (e) {
+// Game Selector Events
+if (btnGameSelector && gameSelectorMenu) {
+  btnGameSelector.addEventListener('click', (e) => {
     e.stopPropagation();
+    const isHidden = gameSelectorMenu.classList.toggle('hidden');
+    gameSelectorWrap?.classList.toggle('open', !isHidden);
+  });
+}
+
+if (btnCloseGameSelector) {
+  btnCloseGameSelector.addEventListener('click', (e) => {
+    e.stopPropagation();
+    gameSelectorMenu?.classList.add('hidden');
+    gameSelectorWrap?.classList.remove('open');
+  });
+}
+
+gameCards.forEach(card => {
+  card.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const targetMode = card.dataset.mode;
+    if (targetMode) setMode(targetMode);
+  });
+});
+
+document.addEventListener('click', (e) => {
+  if (gameSelectorMenu && !gameSelectorMenu.contains(e.target) && !btnGameSelector?.contains(e.target)) {
+    gameSelectorMenu.classList.add('hidden');
+    gameSelectorWrap?.classList.remove('open');
   }
-  setMode(mode);
-};
-
-btnModeBouncing.addEventListener('pointerdown', (e) => onModeBtnTouch('bouncing', e));
-btnModeBouncing.addEventListener('click', (e) => onModeBtnTouch('bouncing', e));
-
-btnModeConway.addEventListener('pointerdown', (e) => onModeBtnTouch('conway', e));
-btnModeConway.addEventListener('click', (e) => onModeBtnTouch('conway', e));
+});
 
 // ═══ CANVAS INTERACTION ═══
 function getCanvasCoords(e) {
@@ -180,33 +235,95 @@ btnAudio.addEventListener('click', () => {
 });
 
 // ═══ CONWAY TOOLBAR & ZOOM & TOOLS ═══
-document.getElementById('btn-conway-step').addEventListener('click', () => {
+document.getElementById('btn-conway-step')?.addEventListener('click', () => {
   conwayEngine.step();
   updateCounter();
 });
 
-document.getElementById('btn-conway-random').addEventListener('click', () => {
+document.getElementById('btn-conway-random')?.addEventListener('click', () => {
   conwayEngine.randomize();
   updateCounter();
 });
 
-document.getElementById('btn-conway-clear').addEventListener('click', () => {
+document.getElementById('btn-conway-clear')?.addEventListener('click', () => {
   conwayEngine.clear();
   updateCounter();
 });
 
-// Conway Tools: Draw vs Pan
+// Conway Tools: Draw, Line, Cross, Pan
 const btnToolDraw = document.getElementById('btn-conway-tool-draw');
+const btnToolLine = document.getElementById('btn-conway-tool-line');
+const btnToolCross = document.getElementById('btn-conway-tool-cross');
 const btnToolPan = document.getElementById('btn-conway-tool-pan');
+const btnConwayCenter = document.getElementById('btn-conway-center');
+const crossAngleBadge = document.getElementById('cross-angle-badge');
+const crossAngleMenu = document.getElementById('cross-angle-menu');
 
 function setConwayTool(tool) {
   conwayEngine.setTool(tool);
   if (btnToolDraw) btnToolDraw.classList.toggle('active', tool === 'draw');
+  if (btnToolLine) btnToolLine.classList.toggle('active', tool === 'line');
+  if (btnToolCross) btnToolCross.classList.toggle('active', tool === 'cross');
   if (btnToolPan) btnToolPan.classList.toggle('active', tool === 'pan');
 }
 
 if (btnToolDraw) btnToolDraw.addEventListener('click', () => setConwayTool('draw'));
+if (btnToolLine) btnToolLine.addEventListener('click', () => setConwayTool('line'));
 if (btnToolPan) btnToolPan.addEventListener('click', () => setConwayTool('pan'));
+
+if (btnToolCross) {
+  btnToolCross.addEventListener('click', (e) => {
+    if (conwayEngine.tool !== 'cross') {
+      setConwayTool('cross');
+    } else {
+      // Toggle angle popover when already active
+      e.stopPropagation();
+      crossAngleMenu?.classList.toggle('hidden');
+    }
+  });
+}
+
+// Center camera on active cluster or origin
+if (btnConwayCenter) {
+  btnConwayCenter.addEventListener('click', () => {
+    conwayEngine.centerView();
+    updateZoomDisplay();
+  });
+}
+
+// Set Radial Cross Angle
+function setRadialAngle(angle) {
+  conwayEngine.setRadialAngle(angle);
+  if (crossAngleBadge) crossAngleBadge.textContent = `${angle}°`;
+
+  // Update angle button active states
+  document.querySelectorAll('.angle-opt-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.angle) === angle);
+  });
+  document.querySelectorAll('.radial-angle-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.angle) === angle);
+  });
+
+  if (crossAngleMenu) crossAngleMenu.classList.add('hidden');
+  saveSettings();
+}
+
+document.querySelectorAll('.angle-opt-btn, .radial-angle-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const angle = parseInt(btn.dataset.angle);
+    if (!isNaN(angle)) {
+      setRadialAngle(angle);
+      setConwayTool('cross');
+    }
+  });
+});
+
+document.addEventListener('click', (e) => {
+  if (crossAngleMenu && !crossAngleMenu.contains(e.target) && !btnToolCross?.contains(e.target)) {
+    crossAngleMenu.classList.add('hidden');
+  }
+});
 
 // Conway Zoom controls
 const btnZoomOut = document.getElementById('btn-conway-zoom-out');
@@ -237,6 +354,118 @@ if (btnZoomReset) {
   btnZoomReset.addEventListener('click', () => {
     conwayEngine.resetView();
     updateZoomDisplay();
+  });
+}
+
+// ═══ BOUNCING FLOATING TOOLBAR CONTROLS ═══
+const btnBouncingSpeed = document.getElementById('btn-bouncing-speed');
+const bouncingSpeedDisplay = document.getElementById('bouncing-speed-display');
+const optTimescale = document.getElementById('opt-timescale');
+const timescaleLabel = document.getElementById('timescale-label');
+
+const speedSteps = [1.0, 1.5, 2.0, 3.0, 0.5];
+let currentSpeedStepIdx = 0;
+
+function updateBouncingTimeScale(scale) {
+  bouncingEngine.setTimeScale(scale);
+  if (bouncingSpeedDisplay) bouncingSpeedDisplay.textContent = `${scale.toFixed(1)}x`;
+  if (optTimescale) optTimescale.value = Math.round(scale * 10);
+  if (timescaleLabel) timescaleLabel.textContent = `${scale.toFixed(1)}x`;
+}
+
+if (btnBouncingSpeed) {
+  btnBouncingSpeed.addEventListener('click', () => {
+    currentSpeedStepIdx = (currentSpeedStepIdx + 1) % speedSteps.length;
+    updateBouncingTimeScale(speedSteps[currentSpeedStepIdx]);
+    saveSettings();
+  });
+}
+
+if (optTimescale) {
+  optTimescale.addEventListener('input', () => {
+    const val = parseInt(optTimescale.value) / 10;
+    bouncingEngine.setTimeScale(val);
+    if (timescaleLabel) timescaleLabel.textContent = `${val.toFixed(1)}x`;
+    if (bouncingSpeedDisplay) bouncingSpeedDisplay.textContent = `${val.toFixed(1)}x`;
+  });
+}
+
+// Bouncing Boundary Area
+const btnBouncingArea = document.getElementById('btn-bouncing-area');
+const bouncingAreaDisplay = document.getElementById('bouncing-area-display');
+const optBoundaryScale = document.getElementById('opt-boundary-scale');
+const boundaryScaleLabel = document.getElementById('boundary-scale-label');
+
+const areaSteps = [1.0, 0.75, 0.5, 0.35];
+let currentAreaStepIdx = 0;
+
+function updateBouncingBoundaryScale(scale) {
+  bouncingEngine.setBoundaryScale(scale);
+  const pct = Math.round(scale * 100);
+  if (bouncingAreaDisplay) bouncingAreaDisplay.textContent = `Área: ${pct}%`;
+  if (optBoundaryScale) optBoundaryScale.value = pct;
+  if (boundaryScaleLabel) boundaryScaleLabel.textContent = `${pct}%`;
+}
+
+if (btnBouncingArea) {
+  btnBouncingArea.addEventListener('click', () => {
+    currentAreaStepIdx = (currentAreaStepIdx + 1) % areaSteps.length;
+    updateBouncingBoundaryScale(areaSteps[currentAreaStepIdx]);
+    saveSettings();
+  });
+}
+
+if (optBoundaryScale) {
+  optBoundaryScale.addEventListener('input', () => {
+    const val = parseInt(optBoundaryScale.value);
+    bouncingEngine.setBoundaryScale(val / 100);
+    if (boundaryScaleLabel) boundaryScaleLabel.textContent = `${val}%`;
+    if (bouncingAreaDisplay) bouncingAreaDisplay.textContent = `Área: ${val}%`;
+  });
+}
+
+// Add & Clear in Bouncing Bar
+const btnBouncingAdd = document.getElementById('btn-bouncing-add');
+if (btnBouncingAdd) {
+  btnBouncingAdd.addEventListener('click', () => {
+    bouncingEngine.addBall();
+    updateCounter();
+  });
+}
+
+const btnBouncingClear = document.getElementById('btn-bouncing-clear');
+if (btnBouncingClear) {
+  btnBouncingClear.addEventListener('click', () => {
+    bouncingEngine.clearBalls();
+    updateCounter();
+  });
+}
+
+// Gravity in Bouncing Bar
+const btnBouncingGravity = document.getElementById('btn-bouncing-gravity');
+if (btnBouncingGravity) {
+  btnBouncingGravity.addEventListener('click', () => {
+    const active = !bouncingEngine.gravity;
+    bouncingEngine.setGravity(active);
+    btnBouncingGravity.classList.toggle('active', active);
+    const optGrav = document.getElementById('opt-gravity');
+    if (optGrav) optGrav.checked = active;
+    const gravRow = document.getElementById('gravity-slider-row');
+    if (gravRow) gravRow.classList.toggle('hidden', !active);
+    saveSettings();
+  });
+}
+
+// Trail in Bouncing Bar
+const btnBouncingTrail = document.getElementById('btn-bouncing-trail');
+if (btnBouncingTrail) {
+  btnBouncingTrail.addEventListener('click', () => {
+    const active = !bouncingEngine.trail;
+    bouncingEngine.setTrail(active);
+    btnBouncingTrail.classList.toggle('active', active);
+    const optTr = document.getElementById('opt-trail');
+    if (optTr) optTr.checked = active;
+    saveSettings();
   });
 }
 
@@ -493,22 +722,7 @@ if (borderThickSlider && borderThickLabel) {
   });
 }
 
-// ═══ BATTLE MODE ═══
-const battleToggle = document.getElementById('opt-battle');
-const battleHealthRow = document.getElementById('battle-health-row');
-const battleHealthSlider = document.getElementById('opt-battle-health');
-const battleHealthLabel = document.getElementById('battle-health-label');
-
-battleToggle.addEventListener('change', () => {
-  bouncingEngine.setBattleMode(battleToggle.checked);
-  battleHealthRow.classList.toggle('hidden', !battleToggle.checked);
-});
-
-battleHealthSlider.addEventListener('input', () => {
-  const hp = parseInt(battleHealthSlider.value);
-  bouncingEngine.setBattleHealth(hp);
-  battleHealthLabel.textContent = hp;
-});
+// Boundary scale & timescale sliders handled above in BOUNCING FLOATING TOOLBAR CONTROLS
 
 // ═══ AUTO SPAWN ═══
 const autospawnToggle = document.getElementById('opt-autospawn');
@@ -666,8 +880,9 @@ function saveSettings() {
     autospawn: document.getElementById('opt-autospawn')?.checked ?? false,
     autospawnSpeed: document.getElementById('opt-autospawn-speed')?.value ?? '5',
     wakelock: document.getElementById('opt-wakelock')?.checked ?? false,
-    battle: document.getElementById('opt-battle')?.checked ?? false,
-    battleHealth: document.getElementById('opt-battle-health')?.value ?? '5',
+    boundaryScale: document.getElementById('opt-boundary-scale')?.value ?? '100',
+    timescale: document.getElementById('opt-timescale')?.value ?? '10',
+    radialAngle: conwayEngine.radialAngleStep || 90,
     // Audio & Conway
     sound: document.getElementById('opt-sound')?.checked ?? true,
     volume: document.getElementById('opt-volume')?.value ?? '50',
@@ -738,8 +953,15 @@ function loadSettings() {
 
     setCheck('opt-wakelock', s.wakelock);
     
-    setVal('opt-battle-health', s.battleHealth);
-    setCheck('opt-battle', s.battle);
+    if (s.boundaryScale) {
+      updateBouncingBoundaryScale(parseInt(s.boundaryScale) / 100);
+    }
+    if (s.timescale) {
+      updateBouncingTimeScale(parseInt(s.timescale) / 10);
+    }
+    if (s.radialAngle) {
+      setRadialAngle(parseInt(s.radialAngle));
+    }
 
     // Audio & Conway settings load
     setCheck('opt-sound', s.sound);

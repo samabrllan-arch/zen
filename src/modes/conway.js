@@ -139,6 +139,9 @@ export class ConwayMode {
     // Simulation metrics
     this.generation = 0;
     this.aliveCount = 0;
+    this.stillCount = 0;
+    this.oscillatingCount = 0;
+    this.prev2Grid = null; // Buffer from 2 generations ago to detect oscillators
     this.speed = 12; // generations per second
     this.lastStepTime = 0;
     this.wrap = true; // toroidal universe
@@ -150,8 +153,11 @@ export class ConwayMode {
     this.minZoom = 0.35;
     this.maxZoom = 4.0;
 
-    // Active tool: 'draw' | 'pan'
+    // Active tool: 'draw' | 'line' | 'cross' | 'pan'
     this.tool = 'draw';
+    this.radialAngleStep = 90; // Default: 90° perpendicular cross
+    this.lineStartCell = null;
+    this.previewCells = [];
 
     // Zen Pattern Rain (Lluvia de Patrones)
     this.rainEnabled = false;
@@ -276,7 +282,10 @@ export class ConwayMode {
     this.nextGrid = new Uint8Array(size);
     this.trailGrid = new Float32Array(size);
     this.ageGrid = new Uint16Array(size);
+    this.prev2Grid = new Uint8Array(size);
     this.aliveCount = 0;
+    this.stillCount = 0;
+    this.oscillatingCount = 0;
   }
 
   // Expands grid in any direction while preserving existing cells and exact screen positions
@@ -288,6 +297,7 @@ export class ConwayMode {
     const oldNext = this.nextGrid;
     const oldTrail = this.trailGrid;
     const oldAge = this.ageGrid;
+    const oldPrev2 = this.prev2Grid;
 
     const newCols = oldCols + addLeft + addRight;
     const newRows = oldRows + addTop + addBottom;
@@ -297,6 +307,7 @@ export class ConwayMode {
     const newNext = new Uint8Array(newSize);
     const newTrail = new Float32Array(newSize);
     const newAge = new Uint16Array(newSize);
+    const newPrev2 = new Uint8Array(newSize);
 
     if (oldGrid) {
       for (let r = 0; r < oldRows; r++) {
@@ -309,6 +320,7 @@ export class ConwayMode {
           newNext[newIdx] = oldNext[oldIdx];
           newTrail[newIdx] = oldTrail[oldIdx];
           newAge[newIdx] = oldAge[oldIdx];
+          if (oldPrev2) newPrev2[newIdx] = oldPrev2[oldIdx];
         }
       }
     }
@@ -319,6 +331,7 @@ export class ConwayMode {
     this.nextGrid = newNext;
     this.trailGrid = newTrail;
     this.ageGrid = newAge;
+    this.prev2Grid = newPrev2;
 
     // Compensate camera pan so existing cells don't jump on screen
     const effCell = this.cellSize * this.zoom;
@@ -403,8 +416,50 @@ export class ConwayMode {
     this.ensureViewportCoverage();
   }
 
+  // Smoothly recenters view onto the centroid of active cells or canvas center
+  centerView() {
+    if (this.aliveCount > 0 && this.grid) {
+      let sumC = 0, sumR = 0, count = 0;
+      for (let r = 0; r < this.rows; r++) {
+        const rowOffset = r * this.cols;
+        for (let c = 0; c < this.cols; c++) {
+          if (this.grid[rowOffset + c] === 1) {
+            sumC += c;
+            sumR += r;
+            count++;
+          }
+        }
+      }
+      if (count > 0) {
+        const avgC = sumC / count;
+        const avgR = sumR / count;
+        const effCell = this.cellSize * this.zoom;
+        this.panX = (this.canvas.width / 2) - (avgC + 0.5) * effCell;
+        this.panY = (this.canvas.height / 2) - (avgR + 0.5) * effCell;
+        this.ensureViewportCoverage();
+        return;
+      }
+    }
+    this.resetView();
+  }
+
+  getDidacticMetrics() {
+    return {
+      generation: this.generation,
+      alive: this.aliveCount,
+      still: this.stillCount,
+      oscillating: this.oscillatingCount
+    };
+  }
+
   setTool(tool) {
-    this.tool = tool; // 'draw' | 'pan'
+    this.tool = tool; // 'draw' | 'line' | 'cross' | 'pan'
+    this.previewCells = [];
+    this.lineStartCell = null;
+  }
+
+  setRadialAngle(degrees) {
+    this.radialAngleStep = Math.max(10, Math.min(90, degrees));
   }
 
   toggleRain() {
@@ -457,8 +512,13 @@ export class ConwayMode {
     this.nextGrid.fill(0);
     this.trailGrid.fill(0);
     this.ageGrid.fill(0);
+    if (this.prev2Grid) this.prev2Grid.fill(0);
     this.generation = 0;
     this.aliveCount = 0;
+    this.stillCount = 0;
+    this.oscillatingCount = 0;
+    this.previewCells = [];
+    this.lineStartCell = null;
     this.ripples = [];
   }
 
@@ -513,6 +573,74 @@ export class ConwayMode {
     }
   }
 
+  // Bresenham line algorithm for perfectly straight grid lines
+  _getLineCells(x0, y0, x1, y1) {
+    const cells = [];
+    const dx = Math.abs(x1 - x0);
+    const dy = Math.abs(y1 - y0);
+    const sx = (x0 < x1) ? 1 : -1;
+    const sy = (y0 < y1) ? 1 : -1;
+    let err = dx - dy;
+    let cx = x0;
+    let cy = y0;
+
+    while (true) {
+      cells.push({ c: cx, r: cy });
+      if (cx === x1 && cy === y1) break;
+      const e2 = 2 * err;
+      if (e2 > -dy) { err -= dy; cx += sx; }
+      if (e2 < dx) { err += dx; cy += sy; }
+    }
+    return cells;
+  }
+
+  // Symmetrical perpendicular cross / radial star generator (customizable degree interval)
+  _getCrossCells(x0, y0, x1, y1, stepDegrees = this.radialAngleStep || 90) {
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const dist = Math.hypot(dx, dy);
+
+    // If tap or minimal drag, use default radius of 6 cells for an immediate neat shape
+    const R = dist < 1.5 ? 6 : Math.round(dist);
+
+    // Base angle from drag vector, or 0 if tap
+    let baseAngle = dist < 1.5 ? 0 : Math.atan2(dy, dx);
+
+    // Snap base angle to nearest 15 degrees for rock-solid alignment on touchscreens
+    const snapRad = (15 * Math.PI) / 180;
+    baseAngle = Math.round(baseAngle / snapRad) * snapRad;
+
+    const stepRad = (stepDegrees * Math.PI) / 180;
+    // Number of distinct lines through center covering 180 degrees
+    const lineCount = Math.max(1, Math.round(180 / stepDegrees));
+
+    const set = new Set();
+    const result = [];
+    const add = (pt) => {
+      const k = `${pt.c},${pt.r}`;
+      if (!set.has(k)) {
+        set.add(k);
+        result.push(pt);
+      }
+    };
+
+    for (let i = 0; i < lineCount; i++) {
+      const angle = baseAngle + i * stepRad;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+      const ax = Math.round(x0 + R * cosA);
+      const ay = Math.round(y0 + R * sinA);
+      const bx = Math.round(x0 - R * cosA);
+      const by = Math.round(y0 - R * sinA);
+      const line = this._getLineCells(bx, by, ax, ay);
+      for (let j = 0; j < line.length; j++) {
+        add(line[j]);
+      }
+    }
+
+    return result;
+  }
+
   // ═══ POINTER & TOUCH INTERACTIONS ═══
   handlePointerDown(pointerId, screenX, screenY) {
     this.activePointers.set(pointerId, { x: screenX, y: screenY });
@@ -522,6 +650,18 @@ export class ConwayMode {
 
       if (this.tool === 'pan') {
         this.isSinglePointerDrag = true;
+      } else if (this.tool === 'line') {
+        const cell = this.screenToCell(screenX, screenY);
+        if (cell) {
+          this.lineStartCell = cell;
+          this.previewCells = [cell];
+        }
+      } else if (this.tool === 'cross') {
+        const cell = this.screenToCell(screenX, screenY);
+        if (cell) {
+          this.lineStartCell = cell;
+          this.previewCells = this._getCrossCells(cell.c, cell.r, cell.c, cell.r, this.radialAngleStep);
+        }
       } else {
         // Draw mode
         const cell = this.screenToCell(screenX, screenY);
@@ -542,6 +682,8 @@ export class ConwayMode {
       };
       this.isSinglePointerDrag = false;
       this.lastDrawnCell = null;
+      this.previewCells = [];
+      this.lineStartCell = null;
     }
   }
 
@@ -550,7 +692,6 @@ export class ConwayMode {
     this.activePointers.set(pointerId, { x: screenX, y: screenY });
 
     if (this.activePointers.size === 2) {
-      // Two-finger pinch-to-zoom & two-finger pan
       const pts = Array.from(this.activePointers.values());
       const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
       const currentMid = {
@@ -580,6 +721,26 @@ export class ConwayMode {
           this.panY += screenY - this.lastPanPointer.y;
           this.lastPanPointer = { x: screenX, y: screenY };
         }
+      } else if (this.tool === 'line') {
+        if (this.lineStartCell) {
+          const currentCell = this.screenToCell(screenX, screenY);
+          if (currentCell) {
+            this.previewCells = this._getLineCells(this.lineStartCell.c, this.lineStartCell.r, currentCell.c, currentCell.r);
+          }
+        }
+      } else if (this.tool === 'cross') {
+        if (this.lineStartCell) {
+          const currentCell = this.screenToCell(screenX, screenY);
+          if (currentCell) {
+            this.previewCells = this._getCrossCells(
+              this.lineStartCell.c,
+              this.lineStartCell.r,
+              currentCell.c,
+              currentCell.r,
+              this.radialAngleStep
+            );
+          }
+        }
       } else if (this.tool === 'draw') {
         const cell = this.screenToCell(screenX, screenY);
         if (!cell) return;
@@ -594,7 +755,35 @@ export class ConwayMode {
 
   handlePointerUp(pointerId) {
     this.activePointers.delete(pointerId);
+
     if (this.activePointers.size === 0) {
+      // Bake preview line or cross if geometric tool was active
+      if ((this.tool === 'line' || this.tool === 'cross') && this.previewCells.length > 0) {
+        for (const pt of this.previewCells) {
+          let c = pt.c;
+          let r = pt.r;
+          if (this.wrap) {
+            c = ((c % this.cols) + this.cols) % this.cols;
+            r = ((r % this.rows) + this.rows) % this.rows;
+          }
+          this._setCell(c, r, 1);
+        }
+        zenAudio.playLifeChime(Math.min(30, this.previewCells.length), this.cols * this.rows);
+        const midPt = this.previewCells[Math.floor(this.previewCells.length / 2)];
+        if (midPt) {
+          const effCell = this.cellSize * this.zoom;
+          this.ripples.push({
+            x: midPt.c * effCell + this.panX,
+            y: midPt.r * effCell + this.panY,
+            radius: 4,
+            maxRadius: 28,
+            alpha: 1.0
+          });
+        }
+        this.previewCells = [];
+        this.lineStartCell = null;
+      }
+
       this.lastDrawnCell = null;
       this.isSinglePointerDrag = false;
       this.lastPanPointer = null;
@@ -713,6 +902,8 @@ export class ConwayMode {
 
     let aliveNow = 0;
     let births = 0;
+    let stillNow = 0;
+    let oscillatingNow = 0;
 
     for (let r = 0; r < rows; r++) {
       const rowOffset = r * cols;
@@ -747,8 +938,14 @@ export class ConwayMode {
         if (state === 1) {
           if (neighbors === 2 || neighbors === 3) {
             next[idx] = 1;
-            age[idx] = Math.min(100, age[idx] + 1);
+            const newAge = Math.min(100, age[idx] + 1);
+            age[idx] = newAge;
             aliveNow++;
+            if (newAge >= 4) {
+              stillNow++;
+            } else if (this.prev2Grid && this.prev2Grid[idx] === 1) {
+              oscillatingNow++;
+            }
           } else {
             next[idx] = 0;
             age[idx] = 0;
@@ -761,6 +958,9 @@ export class ConwayMode {
             trail[idx] = 1.0;
             aliveNow++;
             births++;
+            if (this.prev2Grid && this.prev2Grid[idx] === 1) {
+              oscillatingNow++;
+            }
           } else {
             next[idx] = 0;
           }
@@ -768,9 +968,16 @@ export class ConwayMode {
       }
     }
 
+    // Save previous state for 2-cycle oscillator detection
+    if (this.prev2Grid && this.prev2Grid.length === grid.length) {
+      this.prev2Grid.set(grid);
+    }
+
     // Swap buffers
     this.grid.set(next);
     this.aliveCount = aliveNow;
+    this.stillCount = stillNow;
+    this.oscillatingCount = oscillatingNow;
     this.generation++;
 
     // Ambient chime if enabled
@@ -919,6 +1126,89 @@ export class ConwayMode {
         ctx.arc(rip.x, rip.y, rip.radius, 0, Math.PI * 2);
         ctx.stroke();
       }
+      ctx.restore();
+    }
+
+    // 4. Draw Line & Cross Interactive Preview
+    if (this.previewCells && this.previewCells.length > 0) {
+      ctx.save();
+      const colorFn = PALETTES[this.palette] || PALETTES.neon;
+      const previewColor = colorFn(0.65);
+      const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+
+      ctx.fillStyle = previewColor;
+      ctx.shadowColor = previewColor;
+      ctx.shadowBlur = 8;
+      ctx.globalAlpha = 0.82;
+
+      for (const pt of this.previewCells) {
+        let pc = pt.c;
+        let pr = pt.r;
+        if (this.wrap) {
+          pc = ((pc % cols) + cols) % cols;
+          pr = ((pr % rows) + rows) % rows;
+        }
+        const cx = pc * effCell + panX + effCell / 2;
+        const cy = pr * effCell + panY + effCell / 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(2, effCell * 0.42), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Connecting guide lines for clarity
+      if (this.lineStartCell && this.previewCells.length > 1) {
+        const startX = this.lineStartCell.c * effCell + panX + effCell / 2;
+        const startY = this.lineStartCell.r * effCell + panY + effCell / 2;
+
+        ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.3)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+
+        if (this.tool === 'line') {
+          const endPt = this.previewCells[this.previewCells.length - 1];
+          const endX = endPt.c * effCell + panX + effCell / 2;
+          const endY = endPt.r * effCell + panY + effCell / 2;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.stroke();
+        } else if (this.tool === 'cross') {
+          const endPt = this.previewCells[this.previewCells.length - 1];
+          const dx = (endPt.c - this.lineStartCell.c) * effCell;
+          const dy = (endPt.r - this.lineStartCell.r) * effCell;
+          const R = Math.max(6 * effCell, Math.hypot(dx, dy));
+          const stepDeg = this.radialAngleStep || 90;
+          const stepRad = (stepDeg * Math.PI) / 180;
+          const lineCount = Math.max(1, Math.round(180 / stepDeg));
+
+          ctx.beginPath();
+          for (let i = 0; i < lineCount; i++) {
+            const angle = i * stepRad;
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+            ctx.moveTo(startX - R * cosA, startY - R * sinA);
+            ctx.lineTo(startX + R * cosA, startY + R * sinA);
+          }
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    // 5. Containment Frame for Bounded Universe (when wrap = false)
+    if (!this.wrap) {
+      const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+      ctx.save();
+      const frameX = panX;
+      const frameY = panY;
+      const frameW = cols * effCell;
+      const frameH = rows * effCell;
+
+      ctx.strokeStyle = isDark ? 'rgba(255, 138, 92, 0.45)' : 'rgba(217, 98, 47, 0.5)';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = isDark ? 'rgba(255, 138, 92, 0.35)' : 'rgba(217, 98, 47, 0.25)';
+      ctx.shadowBlur = 12;
+      ctx.strokeRect(frameX, frameY, frameW, frameH);
       ctx.restore();
     }
   }

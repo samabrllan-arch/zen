@@ -235,7 +235,221 @@ body {
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
-/* ═══ MODE SELECTOR ═══ */
+/* ═══ DIDACTIC GAME SELECTOR (CABECERA) ═══ */
+.game-selector-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.game-selector-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 14px 6px 10px;
+  box-shadow: 0 4px 16px var(--shadow);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.game-selector-btn:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+.game-selector-btn:active {
+  transform: scale(0.97);
+}
+
+.game-selector-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.game-selector-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.game-selector-arrow {
+  width: 14px;
+  height: 14px;
+  color: var(--text-2);
+  transition: transform 0.25s ease;
+}
+
+.game-selector-wrap.open .game-selector-arrow {
+  transform: rotate(180deg);
+}
+
+/* Didactic Popover Dropdown */
+.game-selector-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 20px 50px var(--shadow), 0 0 20px var(--accent-soft);
+  z-index: 60;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.game-selector-menu.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -8px) scale(0.96);
+}
+
+.game-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.game-selector-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.game-selector-close {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.game-selector-desc {
+  font-size: 0.72rem;
+  color: var(--text-2);
+  margin-bottom: 12px;
+  line-height: 1.35;
+}
+
+.game-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  width: 100%;
+}
+
+.game-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.game-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 16px var(--accent-soft);
+}
+
+.game-card.coming-soon {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.game-card-left {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  line-height: 1;
+  padding-top: 2px;
+}
+
+.game-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.game-card-title {
+  font-family: 'Fraunces', serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 3px;
+  padding-right: 50px;
+}
+
+.game-card-subtitle {
+  font-size: 0.68rem;
+  color: var(--text-2);
+  line-height: 1.35;
+}
+
+.game-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.active-tag {
+  background: var(--accent);
+  color: #1a0f08;
+}
+
+.didact-tag {
+  background: var(--jade-soft);
+  color: var(--jade);
+  border: 1px solid var(--jade);
+}
+
+.soon-tag {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-2);
+}
+
+/* ═══ LEGACY MODE SELECTOR COMPATIBILITY ═══ */
 .mode-pill {
   display: flex;
   background: var(--bg-surface-glass);
@@ -1020,8 +1234,10 @@ input:focus-visible+.big-track {
   }
 }
 
-/* ═══ CONWAY FLOATING TOOLBAR ═══ */
-.conway-bar {
+/* ═══ FLOATING BOTTOM ACTION BARS (BOUNCING & CONWAY) ═══ */
+.bottom-action-bar,
+.conway-bar,
+.bouncing-bar {
   position: absolute;
   bottom: 24px;
   left: 50%;
@@ -1043,14 +1259,136 @@ input:focus-visible+.big-track {
   -webkit-overflow-scrolling: touch;
 }
 
-.conway-bar::-webkit-scrollbar {
+.bottom-action-bar::-webkit-scrollbar,
+.conway-bar::-webkit-scrollbar,
+.bouncing-bar::-webkit-scrollbar {
   display: none;
 }
 
-.conway-bar.hidden {
+.bottom-action-bar.hidden,
+.conway-bar.hidden,
+.bouncing-bar.hidden {
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, 16px);
+}
+
+.bouncing-speed-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  gap: 1px;
+}
+
+.btn-micro-label {
+  font-size: 0.56rem;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.bouncing-speed-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--accent);
+  pointer-events: none;
+  line-height: 1.1;
+}
+
+.tool-angle-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent);
+  margin-left: 2px;
+  pointer-events: none;
+}
+
+[data-theme="light"] .tool-angle-badge {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* ═══ CROSS ANGLE SELECTION MINI-POPOVER ═══ */
+.cross-angle-popover {
+  position: absolute;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 16px 40px var(--shadow), 0 0 16px var(--accent-soft);
+  z-index: 55;
+  transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cross-angle-popover.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px) scale(0.96);
+}
+
+.popover-title-sm {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.angle-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.angle-opt-btn,
+.radial-angle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.angle-opt-btn:hover,
+.radial-angle-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateX(2px);
+}
+
+.angle-opt-btn.active,
+.radial-angle-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-soft);
 }
 
 .conway-btn {
@@ -1387,15 +1725,33 @@ input:focus-visible+.big-track {
     height: 16px;
   }
 
-  .conway-bar {
-    bottom: 16px;
+  .bottom-action-bar,
+  .conway-bar,
+  .bouncing-bar {
+    bottom: 14px;
     padding: 4px 8px;
-    gap: 6px;
+    gap: 5px;
+    max-width: calc(100% - 16px);
   }
 
   .conway-btn {
-    padding: 6px 10px;
-    font-size: 0.7rem;
+    padding: 5px 8px;
+    font-size: 0.68rem;
     touch-action: manipulation;
+  }
+
+  .game-selector-btn {
+    padding: 5px 10px;
+    font-size: 0.74rem;
+    gap: 5px;
+  }
+
+  .game-selector-name {
+    font-size: 0.76rem;
+  }
+
+  .game-selector-menu {
+    width: calc(100vw - 20px);
+    padding: 12px;
   }
 }
