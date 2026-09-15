@@ -12,8 +12,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,560;9..144,650&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-  <script type="module" crossorigin src="/zen/assets/index-_HrlVjFj.js"></script>
-  <link rel="stylesheet" crossorigin href="/zen/assets/index-HfNUYxZB.css">
+  <script type="module" crossorigin src="/zen/assets/index-D9aOMcsn.js"></script>
+  <link rel="stylesheet" crossorigin href="/zen/assets/index-DFYb_Nv4.css">
 <link rel="manifest" href="/zen/manifest.webmanifest"></head>
 
 <body>
@@ -34,23 +34,63 @@
       <header class="top-nav">
         <div class="top-nav-left">
           <div class="brand-mark" aria-hidden="true"><span class="brand-dot"></span><span id="brand-text">zen</span></div>
-          <span class="hud-badge"><span class="hud-dot"></span><span id="ball-counter">0 bolas</span></span>
+          <span class="hud-badge" id="hud-stats-badge"><span class="hud-dot" id="hud-pulse-dot"></span><span id="ball-counter">0 bolas</span></span>
         </div>
 
-        <div class="mode-pill" id="mode-switcher">
-          <button class="mode-pill-btn active" data-mode="bouncing" id="btn-mode-bouncing" title="Modo Bolas Zen">
-            <svg viewBox="0 0 24 24" fill="currentColor" class="pill-icon"><circle cx="12" cy="12" r="7"/></svg>
-            <span>Bolas</span>
+        <!-- ═══ DIDACTIC GAME SELECTOR (CABECERA) ═══ -->
+        <div class="game-selector-wrap" id="game-selector-wrap">
+          <button id="btn-game-selector" class="game-selector-btn" aria-haspopup="true" aria-expanded="false" title="Cambiar experiencia zen">
+            <span class="game-selector-icon" id="game-selector-icon">⚪</span>
+            <span class="game-selector-name" id="game-selector-name">Bolas Zen</span>
+            <svg class="game-selector-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
           </button>
-          <button class="mode-pill-btn" data-mode="conway" id="btn-mode-conway" title="Modo Juego de la Vida">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pill-icon">
-              <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-              <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-              <rect x="14" y="14" width="7" height="7" rx="1.5"/>
-              <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-            </svg>
-            <span>Vida</span>
-          </button>
+
+          <!-- Didactic Game Selection Popover Card Menu -->
+          <div id="game-selector-menu" class="game-selector-menu hidden">
+            <div class="game-selector-header">
+              <div class="game-selector-title">Experiencias Zen</div>
+              <button id="btn-close-game-selector" class="btn-ghost game-selector-close" title="Cerrar">×</button>
+            </div>
+            <p class="game-selector-desc">Selecciona la simulación o juego zen que deseas explorar:</p>
+            
+            <div class="game-cards-list">
+              <!-- Card 1: Bolas Zen -->
+              <button class="game-card active" data-mode="bouncing" id="card-bouncing">
+                <div class="game-card-badge active-tag">Activo</div>
+                <div class="game-card-left">
+                  <span class="game-card-emoji">⚪</span>
+                </div>
+                <div class="game-card-body">
+                  <div class="game-card-title">Bolas Zen</div>
+                  <div class="game-card-subtitle">Física cinética, colisiones elásticas y melodías pentatónicas armónicas.</div>
+                </div>
+              </button>
+
+              <!-- Card 2: Conway Juego de la Vida -->
+              <button class="game-card" data-mode="conway" id="card-conway">
+                <div class="game-card-badge didact-tag">Didáctico</div>
+                <div class="game-card-left">
+                  <span class="game-card-emoji">🧬</span>
+                </div>
+                <div class="game-card-body">
+                  <div class="game-card-title">Juego de la Vida (Conway)</div>
+                  <div class="game-card-subtitle">Autómata celular matemático con líneas rectas, cruces radiales y lluvia zen.</div>
+                </div>
+              </button>
+
+              <!-- Card 3: Próximamente (Expansible Play Store) -->
+              <div class="game-card coming-soon">
+                <div class="game-card-badge soon-tag">Próximamente</div>
+                <div class="game-card-left">
+                  <span class="game-card-emoji">✨</span>
+                </div>
+                <div class="game-card-body">
+                  <div class="game-card-title">Péndulos Armónicos</div>
+                  <div class="game-card-subtitle">Péndulo doble caótico y figuras de Lissajous con resonancia acústica.</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="top-nav-right">
@@ -74,8 +114,41 @@
         </div>
       </header>
 
+      <!-- ═══ BOUNCING QUICK FLOATING TOOLBAR ═══ -->
+      <div id="bouncing-bar" class="bottom-action-bar bouncing-bar">
+        <button id="btn-bouncing-speed" class="conway-btn bouncing-speed-btn" title="Velocidad física de tiempo (0.5x a 3.0x)">
+          <span class="btn-micro-label">Velocidad</span>
+          <span id="bouncing-speed-display" class="bouncing-speed-val">1.0x</span>
+        </button>
+
+        <button id="btn-bouncing-add" class="conway-btn" title="Añadir Bola (+)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>+ Bola</span>
+        </button>
+
+        <button id="btn-bouncing-area" class="conway-btn" title="Área delimitada de contención (Compacta / Media / Total)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="4"/></svg>
+          <span id="bouncing-area-display">Área: 100%</span>
+        </button>
+
+        <button id="btn-bouncing-gravity" class="conway-btn active" title="Activar/Desactivar Gravedad">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v14M7 11l5 5 5-5M4 21h16"/></svg>
+          <span>Gravedad</span>
+        </button>
+
+        <button id="btn-bouncing-trail" class="conway-btn active" title="Activar/Desactivar Estela Luminosa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2"/></svg>
+          <span>Estela</span>
+        </button>
+
+        <button id="btn-bouncing-clear" class="conway-btn conway-btn-danger" title="Limpiar bolas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+          <span>Limpiar</span>
+        </button>
+      </div>
+
       <!-- ═══ CONWAY QUICK FLOATING TOOLBAR ═══ -->
-      <div id="conway-bar" class="conway-bar hidden">
+      <div id="conway-bar" class="bottom-action-bar conway-bar hidden">
         <button id="btn-conway-step" class="conway-btn" title="Avanzar 1 generación">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <polygon points="5 4 15 12 5 20 5 4" fill="currentColor"></polygon>
@@ -84,9 +157,9 @@
           <span>Paso</span>
         </button>
 
-        <!-- Tool Mode: Pintar vs Mover -->
+        <!-- Tool Mode: Pintar, Línea, Cruz con grados, Mover -->
         <div class="conway-tool-pill">
-          <button id="btn-conway-tool-draw" class="conway-btn active" title="Pintar o borrar células">
+          <button id="btn-conway-tool-draw" class="conway-btn active" title="Pintar o borrar células libres">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
               <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
@@ -95,6 +168,18 @@
             </svg>
             <span>Pintar</span>
           </button>
+
+          <button id="btn-conway-tool-line" class="conway-btn" title="Trazar línea recta (Bresenham)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="4" cy="20" r="2" fill="currentColor"/><circle cx="20" cy="4" r="2" fill="currentColor"/></svg>
+            <span>Línea</span>
+          </button>
+
+          <button id="btn-conway-tool-cross" class="conway-btn" title="Cruz / Simetría radial perpendicular (Toca para cambiar ángulo)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+            <span>Cruz</span>
+            <span id="cross-angle-badge" class="tool-angle-badge">90°</span>
+          </button>
+
           <button id="btn-conway-tool-pan" class="conway-btn" title="Mover y explorar el mapa">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
@@ -105,6 +190,12 @@
             <span>Mover</span>
           </button>
         </div>
+
+        <!-- Center / Home Camera Button -->
+        <button id="btn-conway-center" class="conway-btn" title="Centrar cámara en el origen o células vivas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          <span>Centrar</span>
+        </button>
 
         <!-- Zoom Controls -->
         <div class="conway-zoom-group">
@@ -152,6 +243,18 @@
           </svg>
           <span>Limpiar</span>
         </button>
+      </div>
+
+      <!-- ═══ CROSS ANGLE SELECTION MINI-POPOVER ═══ -->
+      <div id="cross-angle-menu" class="cross-angle-popover hidden">
+        <div class="popover-title-sm">Simetría de Cruz / Rayos</div>
+        <div class="angle-options-grid">
+          <button class="angle-opt-btn active" data-angle="90"><span>➕</span> 90° (Cruz 4 brazos)</button>
+          <button class="angle-opt-btn" data-angle="60"><span>✳️</span> 60° (Estrella 6 brazos)</button>
+          <button class="angle-opt-btn" data-angle="45"><span>✴️</span> 45° (Estrella 8 brazos)</button>
+          <button class="angle-opt-btn" data-angle="30"><span>☀️</span> 30° (Rayos 12 brazos)</button>
+          <button class="angle-opt-btn" data-angle="15"><span>🌸</span> 15° (Rosa 24 brazos)</button>
+        </div>
       </div>
 
       <!-- ═══ CONWAY PRESET POPOVER (OUTSIDE conway-bar TO PREVENT CLIPPING) ═══ -->
@@ -403,16 +506,23 @@
               </div>
             </div>
 
-            <!-- Modo Batalla -->
+            <!-- Área Delimitada de Contención -->
             <div class="ctrl-group">
-              <div class="ctrl-toggle-row">
-                <span class="ctrl-label">Modo Batalla</span>
-                <label class="switch"><input type="checkbox" id="opt-battle"><span class="track"><span class="thumb"></span></span></label>
+              <span class="ctrl-label">Área Delimitada (Zona de Rebote)</span>
+              <div class="slider-row">
+                <span class="ctrl-label-sm">35%</span>
+                <input type="range" id="opt-boundary-scale" min="35" max="100" value="100" class="range">
+                <span class="range-val" id="boundary-scale-label">100%</span>
               </div>
-              <div class="slider-row hidden" id="battle-health-row" style="margin-top:14px;">
-                <span class="ctrl-label-sm" style="min-width: 60px;">Vida Inicial</span>
-                <input type="range" id="opt-battle-health" min="1" max="20" value="5" class="range">
-                <span class="range-val" id="battle-health-label">5</span>
+            </div>
+
+            <!-- Multiplicador de Velocidad Física -->
+            <div class="ctrl-group">
+              <span class="ctrl-label">Multiplicador de Velocidad Física</span>
+              <div class="slider-row">
+                <span class="ctrl-label-sm">0.5x</span>
+                <input type="range" id="opt-timescale" min="5" max="30" value="10" step="1" class="range">
+                <span class="range-val" id="timescale-label">1.0x</span>
               </div>
             </div>
 
@@ -488,6 +598,14 @@
                 <button class="palette-btn" data-palette="fire"><span class="swatch"></span>Fuego</button>
                 <button class="palette-btn" data-palette="rainbow"><span class="swatch"></span>Arcoíris</button>
                 <button class="palette-btn" data-palette="mono"><span class="swatch"></span>Mono</button>
+              </div>
+            <div class="ctrl-group">
+              <span class="ctrl-label" style="display:block; margin-bottom: 8px;">Ángulo de Cruz / Simetría Radial</span>
+              <div class="palette-grid" style="grid-template-columns: 1fr 1fr;">
+                <button class="radial-angle-btn active" data-angle="90">➕ Cruz 90°</button>
+                <button class="radial-angle-btn" data-angle="60">✳️ Estrella 60°</button>
+                <button class="radial-angle-btn" data-angle="45">✴️ Estrella 45°</button>
+                <button class="radial-angle-btn" data-angle="30">☀️ Rayos 30°</button>
               </div>
             </div>
           </div>
