@@ -176,11 +176,43 @@ body {
   transition: background 0.4s ease;
 }
 
-.brand-mark {
+/* ═══ TOP BAR NAVIGATION & CONTROLS ═══ */
+.top-nav {
   position: absolute;
-  top: 14px;
-  left: 16px;
-  z-index: 20;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.top-nav > * {
+  pointer-events: auto;
+}
+
+.top-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 0%;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 0%;
+  justify-content: flex-end;
+}
+
+.brand-mark {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -191,6 +223,7 @@ body {
   color: var(--text-1);
   opacity: 0.88;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 .brand-dot {
@@ -204,11 +237,6 @@ body {
 
 /* ═══ MODE SELECTOR ═══ */
 .mode-pill {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
   display: flex;
   background: var(--bg-surface-glass);
   backdrop-filter: blur(var(--glass-blur));
@@ -218,6 +246,7 @@ body {
   padding: 3px;
   box-shadow: 0 4px 16px var(--shadow);
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .mode-pill-btn {
@@ -233,6 +262,7 @@ body {
   font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -240,6 +270,11 @@ body {
   width: 14px;
   height: 14px;
   transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.mode-pill-btn span {
+  pointer-events: none;
 }
 
 .mode-pill-btn:hover {
@@ -260,15 +295,9 @@ body {
   transform: scale(1.1);
 }
 
-/* ═══ HUD & FLOATING BUTTONS ═══ */
+/* ═══ HUD BADGE & FLOATING BUTTONS ═══ */
 .hud {
-  position: absolute;
-  top: 14px;
-  right: 16px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: contents;
 }
 
 .hud-badge {
@@ -1097,34 +1126,64 @@ input:focus-visible+.big-track {
 
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 600px) {
-  .brand-mark span:not(.brand-dot) {
-    display: none;
+  .top-nav {
+    padding: 10px 8px;
   }
-  
-  .hud {
-    gap: 6px;
-    right: 10px;
-    top: 10px;
+
+  .top-nav-left {
+    gap: 0;
+    flex: 0 1 auto;
+    max-width: 32%;
+  }
+
+  .brand-mark {
+    display: none;
   }
 
   .hud-badge {
-    padding: 5px 10px 5px 8px;
-    font-size: 0.66rem;
+    padding: 5px 8px 5px 6px;
+    font-size: 0.65rem;
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hud-badge #ball-counter {
+    font-size: 0.65rem;
   }
 
   .mode-pill {
-    top: 10px;
     padding: 2px;
+    gap: 2px;
   }
 
   .mode-pill-btn {
-    padding: 5px 10px;
-    font-size: 0.7rem;
+    padding: 5px 8px;
+    font-size: 0.68rem;
+    gap: 4px;
+    touch-action: manipulation;
+  }
+
+  .mode-pill-btn .pill-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .top-nav-right {
+    gap: 5px;
+    flex: 0 1 auto;
   }
 
   .floating-btn {
     width: 32px;
     height: 32px;
+    touch-action: manipulation;
+  }
+
+  .floating-btn svg {
+    width: 16px;
+    height: 16px;
   }
 
   .conway-bar {
@@ -1136,5 +1195,6 @@ input:focus-visible+.big-track {
   .conway-btn {
     padding: 6px 10px;
     font-size: 0.7rem;
+    touch-action: manipulation;
   }
 }

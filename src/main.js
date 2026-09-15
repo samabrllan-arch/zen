@@ -78,8 +78,18 @@ function setMode(mode) {
   saveSettings();
 }
 
-btnModeBouncing.addEventListener('click', () => setMode('bouncing'));
-btnModeConway.addEventListener('click', () => setMode('conway'));
+const onModeBtnTouch = (mode, e) => {
+  if (e) {
+    e.stopPropagation();
+  }
+  setMode(mode);
+};
+
+btnModeBouncing.addEventListener('pointerdown', (e) => onModeBtnTouch('bouncing', e));
+btnModeBouncing.addEventListener('click', (e) => onModeBtnTouch('bouncing', e));
+
+btnModeConway.addEventListener('pointerdown', (e) => onModeBtnTouch('conway', e));
+btnModeConway.addEventListener('click', (e) => onModeBtnTouch('conway', e));
 
 // ═══ CANVAS INTERACTION ═══
 function getCanvasCoords(e) {
