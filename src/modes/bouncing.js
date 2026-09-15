@@ -134,7 +134,27 @@ export class BouncingMode {
     this.particles = [];
   }
 
-  setGravity(on) { this.useGravity = on; }
+  get gravity() { return this.useGravity; }
+  set gravity(on) { this.setGravity(on); }
+
+  get trail() { return this.showTrail; }
+  set trail(on) { this.setTrail(on); }
+
+  setGravity(on) {
+    this.useGravity = !!on;
+    // If turning gravity off, give low-speed/resting balls a gentle float impulse
+    if (!this.useGravity) {
+      for (const b of this.balls) {
+        const spd = Math.hypot(b.vx, b.vy);
+        if (spd < 1.5) {
+          const angle = Math.random() * Math.PI * 2;
+          b.vx = Math.cos(angle) * this.initialSpeed * 0.9;
+          b.vy = Math.sin(angle) * this.initialSpeed * 0.9;
+        }
+      }
+    }
+  }
+
   setGravityVal(v) { this.gravityVal = v; }
   setCollision(on) { this.useCollision = on; }
   setSpeed(v) { this.initialSpeed = v; }
@@ -155,7 +175,12 @@ export class BouncingMode {
     });
   }
 
-  setTrail(on) { this.showTrail = on; }
+  setTrail(on) {
+    this.showTrail = !!on;
+    if (!this.showTrail) {
+      this.balls.forEach(b => { b.trail = []; });
+    }
+  }
 
   setGlow(v) { 
     if (this.glowIntensity !== v) {
@@ -235,7 +260,7 @@ export class BouncingMode {
       // Trail
       if (this.showTrail) {
         b.trail.push({ x: b.x, y: b.y });
-        if (b.trail.length > 10) b.trail.shift();
+        if (b.trail.length > 18) b.trail.shift();
       } else if (b.trail.length > 0) {
         b.trail = [];
       }
@@ -462,10 +487,11 @@ export class BouncingMode {
         ctx.fillStyle = b.color;
         for (let ti = 0; ti < b.trail.length; ti++) {
           const p = b.trail[ti];
-          const a = (ti / b.trail.length) * 0.25 * b.alpha;
+          const ratio = (ti + 1) / b.trail.length;
+          const a = ratio * 0.45 * b.alpha;
           ctx.globalAlpha = a;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, b.radius * 0.6, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, b.radius * (0.3 + 0.5 * ratio), 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.globalAlpha = 1;

@@ -32,6 +32,8 @@ const btnPause = document.getElementById('btn-pause');
 const btnAudio = document.getElementById('btn-audio');
 const conwayBar = document.getElementById('conway-bar');
 const bouncingBar = document.getElementById('bouncing-bar');
+const btnBouncingGravity = document.getElementById('btn-bouncing-gravity');
+const btnBouncingTrail = document.getElementById('btn-bouncing-trail');
 const presetMenu = document.getElementById('conway-preset-menu');
 const btnPresets = document.getElementById('btn-conway-presets');
 
@@ -46,10 +48,15 @@ const gameCards = document.querySelectorAll('.game-card[data-mode]');
 
 function updateCounter() {
   if (currentMode === 'bouncing') {
-    ballCounter.textContent = `${bouncingEngine.balls.length} bola${bouncingEngine.balls.length !== 1 ? 's' : ''}`;
+    ballCounter.innerHTML = `<span class="hud-bouncing-count">${bouncingEngine.balls.length} bola${bouncingEngine.balls.length !== 1 ? 's' : ''}</span>`;
   } else {
     const m = conwayEngine.getDidacticMetrics();
-    ballCounter.textContent = `Gen ${m.generation} • ${m.alive} vivas (${m.still} est • ${m.oscillating} osc)`;
+    ballCounter.innerHTML = `
+      <div class="hud-conway-stacked">
+        <div class="hud-conway-row1"><span class="hud-gen-label">Gen ${m.generation}</span> • <span class="hud-alive-label">${m.alive} vivas</span></div>
+        <div class="hud-conway-row2">${m.still} est • ${m.oscillating} osc</div>
+      </div>
+    `;
   }
 }
 
@@ -77,6 +84,8 @@ function setMode(mode) {
     if (gameSelectorName) gameSelectorName.textContent = 'Bolas Zen';
     if (bouncingBar) bouncingBar.classList.remove('hidden');
     if (conwayBar) conwayBar.classList.add('hidden');
+    if (btnBouncingGravity) btnBouncingGravity.classList.toggle('active', bouncingEngine.useGravity);
+    if (btnBouncingTrail) btnBouncingTrail.classList.toggle('active', bouncingEngine.showTrail);
     updatePauseIcon(bouncingEngine.isPaused);
   } else {
     bouncingEngine.stop();
@@ -441,30 +450,36 @@ if (btnBouncingClear) {
   });
 }
 
-// Gravity in Bouncing Bar
-const btnBouncingGravity = document.getElementById('btn-bouncing-gravity');
+// Gravity in Bouncing Bar & Settings
+const optGravity = document.getElementById('opt-gravity');
+const gravSliderRow = document.getElementById('gravity-slider-row');
+
+function updateBouncingGravity(active) {
+  bouncingEngine.setGravity(active);
+  if (btnBouncingGravity) btnBouncingGravity.classList.toggle('active', active);
+  if (optGravity && optGravity.checked !== active) optGravity.checked = active;
+  if (gravSliderRow) gravSliderRow.classList.toggle('hidden', !active);
+}
+
 if (btnBouncingGravity) {
   btnBouncingGravity.addEventListener('click', () => {
-    const active = !bouncingEngine.gravity;
-    bouncingEngine.setGravity(active);
-    btnBouncingGravity.classList.toggle('active', active);
-    const optGrav = document.getElementById('opt-gravity');
-    if (optGrav) optGrav.checked = active;
-    const gravRow = document.getElementById('gravity-slider-row');
-    if (gravRow) gravRow.classList.toggle('hidden', !active);
+    updateBouncingGravity(!bouncingEngine.useGravity);
     saveSettings();
   });
 }
 
-// Trail in Bouncing Bar
-const btnBouncingTrail = document.getElementById('btn-bouncing-trail');
+// Trail in Bouncing Bar & Settings
+const optTrail = document.getElementById('opt-trail');
+
+function updateBouncingTrail(active) {
+  bouncingEngine.setTrail(active);
+  if (btnBouncingTrail) btnBouncingTrail.classList.toggle('active', active);
+  if (optTrail && optTrail.checked !== active) optTrail.checked = active;
+}
+
 if (btnBouncingTrail) {
   btnBouncingTrail.addEventListener('click', () => {
-    const active = !bouncingEngine.trail;
-    bouncingEngine.setTrail(active);
-    btnBouncingTrail.classList.toggle('active', active);
-    const optTr = document.getElementById('opt-trail');
-    if (optTr) optTr.checked = active;
+    updateBouncingTrail(!bouncingEngine.showTrail);
     saveSettings();
   });
 }
@@ -588,22 +603,24 @@ document.getElementById('btn-clear').addEventListener('click', () => {
   updateCounter();
 });
 
-// Gravity
+// Gravity in Settings Modal
 const gravToggle = document.getElementById('opt-gravity');
 const gravSlider = document.getElementById('opt-gravity-val');
 const gravLabel = document.getElementById('gravity-val-label');
-const gravSliderRow = document.getElementById('gravity-slider-row');
 
-gravToggle.addEventListener('change', () => {
-  bouncingEngine.setGravity(gravToggle.checked);
-  gravSliderRow.classList.toggle('hidden', !gravToggle.checked);
-});
+if (gravToggle) {
+  gravToggle.addEventListener('change', () => {
+    updateBouncingGravity(gravToggle.checked);
+  });
+}
 
-gravSlider.addEventListener('input', () => {
-  const v = gravSlider.value / 100;
-  bouncingEngine.setGravityVal(v);
-  gravLabel.textContent = v.toFixed(2);
-});
+if (gravSlider) {
+  gravSlider.addEventListener('input', () => {
+    const v = gravSlider.value / 100;
+    bouncingEngine.setGravityVal(v);
+    if (gravLabel) gravLabel.textContent = v.toFixed(2);
+  });
+}
 
 // Collision & Effects
 document.getElementById('opt-collision').addEventListener('change', (e) => {
@@ -695,10 +712,9 @@ paletteBtns.forEach(btn => {
   });
 });
 
-const optTrail = document.getElementById('opt-trail');
 if (optTrail) {
   optTrail.addEventListener('change', (e) => {
-    bouncingEngine.setTrail(e.target.checked);
+    updateBouncingTrail(e.target.checked);
   });
 }
 
@@ -918,7 +934,9 @@ function loadSettings() {
       }
     };
 
-    setCheck('opt-gravity', s.gravity);
+    if (s.gravity !== undefined) {
+      updateBouncingGravity(s.gravity);
+    }
     setVal('opt-gravity-val', s.gravityVal);
     setCheck('opt-collision', s.collision);
     
@@ -944,7 +962,9 @@ function loadSettings() {
       if (pBtn) pBtn.click();
     }
 
-    setCheck('opt-trail', s.trail);
+    if (s.trail !== undefined) {
+      updateBouncingTrail(s.trail);
+    }
     setVal('opt-glow', s.glow);
     setVal('opt-border-thick', s.borderThick);
     

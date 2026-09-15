@@ -517,17 +517,17 @@ body {
 .hud-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   background: var(--bg-card);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--border);
-  padding: 6px 14px 6px 10px;
-  border-radius: 999px;
+  padding: 4px 12px 4px 9px;
+  border-radius: 12px;
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-2);
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   transition: all 0.3s ease;
 }
 
@@ -535,6 +535,50 @@ body {
   font-family: 'JetBrains Mono', monospace;
   color: var(--text-1);
   font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-bouncing-count {
+  white-space: nowrap;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.hud-conway-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.15;
+}
+
+.hud-conway-row1 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.hud-gen-label {
+  color: var(--accent);
+}
+
+.hud-alive-label {
+  color: var(--text-1);
+}
+
+.hud-conway-row2 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
 }
 
 .hud-dot {
@@ -1672,7 +1716,7 @@ input:focus-visible+.big-track {
   .top-nav-left {
     gap: 0;
     flex: 0 1 auto;
-    max-width: 32%;
+    max-width: none;
   }
 
   .brand-mark {
@@ -1680,16 +1724,25 @@ input:focus-visible+.big-track {
   }
 
   .hud-badge {
-    padding: 5px 8px 5px 6px;
-    font-size: 0.65rem;
-    max-width: 110px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    padding: 3px 8px 3px 6px;
+    border-radius: 9px;
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
   }
 
-  .hud-badge #ball-counter {
+  .hud-bouncing-count {
+    font-size: 0.68rem;
+  }
+
+  .hud-conway-row1 {
     font-size: 0.65rem;
+    gap: 3px;
+  }
+
+  .hud-conway-row2 {
+    font-size: 0.58rem;
+    gap: 3px;
   }
 
   .mode-pill {
