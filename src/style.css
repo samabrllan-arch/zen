@@ -186,6 +186,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 14px 16px;
   pointer-events: none;
   box-sizing: border-box;
@@ -240,6 +241,7 @@ body {
   position: relative;
   display: flex;
   justify-content: center;
+  flex: 0 0 auto;
 }
 
 .game-selector-btn {
@@ -259,6 +261,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
+  white-space: nowrap;
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -281,6 +284,14 @@ body {
   font-family: 'Fraunces', serif;
   font-weight: 600;
   letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.game-selector-name .name-short {
+  display: none;
+}
+.game-selector-name .name-full {
+  display: inline;
 }
 
 .game-selector-arrow {
@@ -549,14 +560,14 @@ body {
 .hud-conway-stacked {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  line-height: 1.15;
+  gap: 3px;
+  line-height: 1.25;
 }
 
 .hud-conway-row1 {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-1);
@@ -574,11 +585,17 @@ body {
 .hud-conway-row2 {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-size: 0.62rem;
   font-weight: 500;
   color: var(--text-2);
   white-space: nowrap;
+}
+
+.hud-sep {
+  opacity: 0.45;
+  font-size: 0.85em;
+  margin: 0 1px;
 }
 
 .hud-dot {
@@ -1710,13 +1727,14 @@ input:focus-visible+.big-track {
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 600px) {
   .top-nav {
-    padding: 10px 8px;
+    padding: 8px 8px;
+    gap: 6px;
   }
 
   .top-nav-left {
     gap: 0;
-    flex: 0 1 auto;
-    max-width: none;
+    flex: 0 0 auto;
+    min-width: 0;
   }
 
   .brand-mark {
@@ -1724,25 +1742,30 @@ input:focus-visible+.big-track {
   }
 
   .hud-badge {
-    padding: 3px 8px 3px 6px;
+    padding: 3px 7px 3px 6px;
     border-radius: 9px;
-    max-width: none;
+    flex-shrink: 0;
     white-space: normal;
-    overflow: visible;
   }
 
   .hud-bouncing-count {
     font-size: 0.68rem;
   }
 
+  .hud-conway-stacked {
+    gap: 2px;
+    line-height: 1.25;
+  }
+
   .hud-conway-row1 {
     font-size: 0.65rem;
-    gap: 3px;
+    gap: 2px;
   }
 
   .hud-conway-row2 {
     font-size: 0.58rem;
-    gap: 3px;
+    gap: 2px;
+    opacity: 0.85;
   }
 
   .mode-pill {
@@ -1762,20 +1785,44 @@ input:focus-visible+.big-track {
     height: 12px;
   }
 
-  .top-nav-right {
-    gap: 5px;
+  .game-selector-wrap {
     flex: 0 1 auto;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .game-selector-btn {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .game-selector-name {
+    font-size: 0.74rem;
+    white-space: nowrap;
+  }
+
+  .game-selector-menu {
+    width: calc(100vw - 20px);
+    padding: 12px;
+  }
+
+  .top-nav-right {
+    gap: 4px;
+    flex: 0 0 auto;
   }
 
   .floating-btn {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     touch-action: manipulation;
   }
 
   .floating-btn svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
 
   .bottom-action-bar,
@@ -1792,19 +1839,48 @@ input:focus-visible+.big-track {
     font-size: 0.68rem;
     touch-action: manipulation;
   }
+}
+
+@media (max-width: 480px) {
+  .game-selector-name .name-full {
+    display: none;
+  }
+  .game-selector-name .name-short {
+    display: inline;
+  }
+}
+
+@media (max-width: 380px) {
+  .top-nav {
+    padding: 6px 6px;
+    gap: 4px;
+  }
+
+  .hud-badge {
+    padding: 3px 5px 3px 4px;
+    gap: 4px;
+  }
+
+  .hud-conway-row1 {
+    font-size: 0.60rem;
+  }
+
+  .hud-conway-row2 {
+    font-size: 0.54rem;
+  }
 
   .game-selector-btn {
-    padding: 5px 10px;
-    font-size: 0.74rem;
-    gap: 5px;
+    padding: 4px 6px;
+    font-size: 0.68rem;
+    gap: 3px;
   }
 
-  .game-selector-name {
-    font-size: 0.76rem;
+  .top-nav-right {
+    gap: 3px;
   }
 
-  .game-selector-menu {
-    width: calc(100vw - 20px);
-    padding: 12px;
+  .floating-btn {
+    width: 28px;
+    height: 28px;
   }
 }

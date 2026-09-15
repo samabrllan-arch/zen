@@ -53,8 +53,8 @@ function updateCounter() {
     const m = conwayEngine.getDidacticMetrics();
     ballCounter.innerHTML = `
       <div class="hud-conway-stacked">
-        <div class="hud-conway-row1"><span class="hud-gen-label">Gen ${m.generation}</span> • <span class="hud-alive-label">${m.alive} vivas</span></div>
-        <div class="hud-conway-row2">${m.still} est • ${m.oscillating} osc</div>
+        <div class="hud-conway-row1"><span class="hud-gen-label">Gen ${m.generation}</span><span class="hud-sep">•</span><span class="hud-alive-label">${m.alive} vivas</span></div>
+        <div class="hud-conway-row2"><span class="hud-still-label">${m.still} est</span><span class="hud-sep">•</span><span class="hud-osc-label">${m.oscillating} osc</span></div>
       </div>
     `;
   }
@@ -81,7 +81,7 @@ function setMode(mode) {
     conwayEngine.stop();
     bouncingEngine.start();
     if (gameSelectorIcon) gameSelectorIcon.textContent = '⚪';
-    if (gameSelectorName) gameSelectorName.textContent = 'Bolas Zen';
+    if (gameSelectorName) gameSelectorName.innerHTML = '<span class="name-full">Bolas Zen</span><span class="name-short">Bolas</span>';
     if (bouncingBar) bouncingBar.classList.remove('hidden');
     if (conwayBar) conwayBar.classList.add('hidden');
     if (btnBouncingGravity) btnBouncingGravity.classList.toggle('active', bouncingEngine.useGravity);
@@ -91,7 +91,7 @@ function setMode(mode) {
     bouncingEngine.stop();
     conwayEngine.start();
     if (gameSelectorIcon) gameSelectorIcon.textContent = '🧬';
-    if (gameSelectorName) gameSelectorName.textContent = 'Juego de la Vida';
+    if (gameSelectorName) gameSelectorName.innerHTML = '<span class="name-full">Juego de la Vida</span><span class="name-short">Vida</span>';
     if (bouncingBar) bouncingBar.classList.add('hidden');
     if (conwayBar) conwayBar.classList.remove('hidden');
     updatePauseIcon(conwayEngine.isPaused);
