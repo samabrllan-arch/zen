@@ -146,6 +146,15 @@ export class ConwayMode {
     this.lastStepTime = 0;
     this.wrap = true; // toroidal universe
 
+    // Analytics & Scientific History Tracking
+    this.history = []; // [{ gen, alive, still, osc, minC, maxC, minR, maxR, width, height, area }]
+    this.initialAlive = 0;
+    this.initialGen = 0;
+    this.initialBoundingBox = null;
+    this.peakAlive = 0;
+    this.peakGen = 0;
+    this.maxExpansionArea = 0;
+
     // Camera: Zoom & Pan
     this.zoom = 1.0;
     this.panX = 0;
@@ -443,12 +452,213 @@ export class ConwayMode {
     this.resetView();
   }
 
+  getBoundingBox() {
+    if (!this.grid || this.aliveCount === 0) {
+      return { minC: 0, maxC: 0, minR: 0, maxR: 0, width: 0, height: 0, area: 0, w: 0, h: 0 };
+    }
+    let minC = this.cols, maxC = -1, minR = this.rows, maxR = -1;
+    for (let r = 0; r < this.rows; r++) {
+      const rowOffset = r * this.cols;
+      for (let c = 0; c < this.cols; c++) {
+        if (this.grid[rowOffset + c] === 1) {
+          if (c < minC) minC = c;
+          if (c > maxC) maxC = c;
+          if (r < minR) minR = r;
+          if (r > maxR) maxR = r;
+        }
+      }
+    }
+    if (maxC === -1) {
+      return { minC: 0, maxC: 0, minR: 0, maxR: 0, width: 0, height: 0, area: 0, w: 0, h: 0 };
+    }
+    const width = maxC - minC + 1;
+    const height = maxR - minR + 1;
+    const area = width * height;
+    return { minC, maxC, minR, maxR, width, height, area, w: width, h: height };
+  }
+
   getDidacticMetrics() {
     return {
       generation: this.generation,
       alive: this.aliveCount,
       still: this.stillCount,
       oscillating: this.oscillatingCount
+    };
+  }
+
+  getAnalyticsReport() {
+    let lastItem = this.history.length > 0 ? this.history[this.history.length - 1] : null;
+    if (!lastItem) {
+      const bb = this.getBoundingBox();
+      lastItem = {
+        gen: this.generation,
+        alive: this.aliveCount,
+        still: this.stillCount,
+        osc: this.oscillatingCount,
+        minC: bb.minC,
+        maxC: bb.maxC,
+        minR: bb.minR,
+        maxR: bb.maxR,
+        width: bb.width,
+        height: bb.height,
+        area: bb.area,
+        w: bb.width,
+        h: bb.height
+      };
+    }
+
+    const current = {
+      generation: this.generation,
+      alive: this.aliveCount,
+      still: this.stillCount,
+      osc: this.oscillatingCount,
+      width: lastItem.width,
+      height: lastItem.height,
+      area: lastItem.area,
+      w: lastItem.width,
+      h: lastItem.height,
+      minC: lastItem.minC,
+      maxC: lastItem.maxC,
+      minR: lastItem.minR,
+      maxR: lastItem.maxR
+    };
+
+    // Determine spatial expansion and spaceships/gliders diagnosis
+    let hasSpaceships = false;
+    let isExpanding = false;
+    let diagnosis = 'Observando autómata';
+    let diagnosisDetail = 'El patrón se encuentra en sus generaciones iniciales.';
+    let icon = '🔬';
+
+    if (this.aliveCount === 0) {
+      diagnosis = this.generation > 0 ? 'Extinción Completa' : 'Cuadrícula Vacía';
+      diagnosisDetail = this.generation > 0 
+        ? `Toda la colonia celular desapareció en la generación ${this.generation}.` 
+        : 'Aún no se han sembrado células vivas.';
+      icon = '💀';
+    } else if (this.history.length >= 12) {
+      const sampleCount = Math.min(25, this.history.length);
+      const recent = this.history.slice(-sampleCount);
+      const older = recent[0];
+      const newer = recent[recent.length - 1];
+      const areaGrowth = newer.area - older.area;
+      const widthGrowth = newer.width - older.width;
+      const heightGrowth = newer.height - older.height;
+
+      // Detect spaceships touching boundaries or escaping
+      if (newer.width >= this.cols - 2 || newer.height >= this.rows - 2) {
+        hasSpaceships = true;
+        isExpanding = true;
+        diagnosis = 'Expansión Global (Naves Orbitando)';
+        diagnosisDetail = 'Planeadores o naves espaciales han colonizado los confines del universo toroidal.';
+        icon = '🛸';
+      } else if (widthGrowth > 4 || heightGrowth > 4 || areaGrowth > 20) {
+        hasSpaceships = true;
+        isExpanding = true;
+        diagnosis = 'Expansión Infinita (Naves / Planeadores)';
+        diagnosisDetail = `El área de dispersión se expande activamente (+${Math.round(areaGrowth / sampleCount * 10) / 10} celdas/gen) con naves desplazándose hacia el infinito.`;
+        icon = '🚀';
+      } else if (this.oscillatingCount === 0 && this.stillCount === this.aliveCount) {
+        diagnosis = 'Colonia Confinada y Estable';
+        diagnosisDetail = `Estructura 100% estática (still life) delimitada en un área acotada de ${newer.width}×${newer.height} celdas.`;
+        icon = '🏰';
+      } else if (this.oscillatingCount > 0 && Math.abs(areaGrowth) <= 4 && Math.abs(newer.alive - older.alive) <= 12) {
+        diagnosis = 'Oscilador Periódico Acotado';
+        diagnosisDetail = `Población cíclica oscilante (${this.oscillatingCount} células periódicas) confinada en ${newer.width}×${newer.height} celdas.`;
+        icon = '🔄';
+      } else {
+        diagnosis = 'Crecimiento Caótico Activo';
+        diagnosisDetail = `Evolución activa y reactiva con ${this.aliveCount} vivas en un espacio de ${newer.width}×${newer.height} celdas.`;
+        icon = '✨';
+      }
+    } else {
+      diagnosis = 'Fase Inicial de Sembrado';
+      diagnosisDetail = `Generación ${this.generation}: evolucionando desde la configuración original de ${this.initialAlive || this.aliveCount} células.`;
+      icon = '🌱';
+    }
+
+    // Generate milestone comparative records
+    const milestones = [];
+    if (this.history.length > 0) {
+      // 1. Initial
+      const init = this.history[0];
+      milestones.push({
+        label: '🌱 Semilla Inicial',
+        gen: init.gen,
+        alive: init.alive,
+        still: init.still,
+        osc: init.osc,
+        w: init.width,
+        h: init.height,
+        area: init.area
+      });
+
+      // 2. Peak
+      let peakItem = this.history[0];
+      for (let i = 1; i < this.history.length; i++) {
+        if (this.history[i].alive > peakItem.alive) {
+          peakItem = this.history[i];
+        }
+      }
+      if (peakItem.gen !== init.gen) {
+        milestones.push({
+          label: '🏆 Pico Máximo',
+          gen: peakItem.gen,
+          alive: peakItem.alive,
+          still: peakItem.still,
+          osc: peakItem.osc,
+          w: peakItem.width,
+          h: peakItem.height,
+          area: peakItem.area
+        });
+      }
+
+      // 3. Current
+      const curr = this.history[this.history.length - 1];
+      if (curr.gen !== init.gen && curr.gen !== peakItem.gen) {
+        milestones.push({
+          label: '📍 Estado Actual',
+          gen: curr.gen,
+          alive: curr.alive,
+          still: curr.still,
+          osc: curr.osc,
+          w: curr.width,
+          h: curr.height,
+          area: curr.area
+        });
+      }
+    }
+
+    return {
+      generation: this.generation,
+      currentGen: this.generation,
+      initialAlive: this.initialAlive || this.aliveCount,
+      initialGen: this.initialGen,
+      initialBoundingBox: this.initialBoundingBox,
+      peakAlive: this.peakAlive,
+      peakGen: this.peakGen,
+      current,
+      currentAlive: this.aliveCount,
+      currentStill: this.stillCount,
+      currentOsc: this.oscillatingCount,
+      currentBoundingBox: {
+        w: lastItem.width,
+        h: lastItem.height,
+        area: lastItem.area
+      },
+      maxExpansionArea: this.maxExpansionArea,
+      hasSpaceships,
+      isExpanding,
+      diagnosis: {
+        icon,
+        title: diagnosis,
+        detail: diagnosisDetail
+      },
+      diagnosisTitle: diagnosis,
+      diagnosisDetail,
+      icon,
+      history: this.history,
+      milestones
     };
   }
 
@@ -520,6 +730,15 @@ export class ConwayMode {
     this.previewCells = [];
     this.lineStartCell = null;
     this.ripples = [];
+
+    // Reset analytics & scientific history to zero
+    this.history = [];
+    this.initialAlive = 0;
+    this.initialGen = 0;
+    this.initialBoundingBox = null;
+    this.peakAlive = 0;
+    this.peakGen = 0;
+    this.maxExpansionArea = 0;
   }
 
   randomize(density = 0.2) {
@@ -535,6 +754,12 @@ export class ConwayMode {
     }
     this.aliveCount = count;
     this.generation = 0;
+    this.initialAlive = count;
+    this.peakAlive = count;
+    this.peakGen = 0;
+    const bb = this.getBoundingBox();
+    this.initialBoundingBox = bb;
+    this.maxExpansionArea = bb.area;
     zenAudio.playLifeChime(this.aliveCount, total);
   }
 
@@ -849,6 +1074,12 @@ export class ConwayMode {
     const midC = Math.floor(this.cols / 2 - p.grid[0].length / 2);
     const midR = Math.floor(this.rows / 2 - p.grid.length / 2);
     this.stampPattern(name, midC, midR);
+    this.initialAlive = this.aliveCount;
+    this.peakAlive = this.aliveCount;
+    this.peakGen = 0;
+    const bb = this.getBoundingBox();
+    this.initialBoundingBox = bb;
+    this.maxExpansionArea = bb.area;
 
     zenAudio.playLifeChime(this.aliveCount, this.cols * this.rows);
   }
@@ -904,6 +1135,7 @@ export class ConwayMode {
     let births = 0;
     let stillNow = 0;
     let oscillatingNow = 0;
+    let minC = cols, maxC = -1, minR = rows, maxR = -1;
 
     for (let r = 0; r < rows; r++) {
       const rowOffset = r * cols;
@@ -941,6 +1173,10 @@ export class ConwayMode {
             const newAge = Math.min(100, age[idx] + 1);
             age[idx] = newAge;
             aliveNow++;
+            if (c < minC) minC = c;
+            if (c > maxC) maxC = c;
+            if (r < minR) minR = r;
+            if (r > maxR) maxR = r;
             if (newAge >= 4) {
               stillNow++;
             } else if (this.prev2Grid && this.prev2Grid[idx] === 1) {
@@ -958,6 +1194,10 @@ export class ConwayMode {
             trail[idx] = 1.0;
             aliveNow++;
             births++;
+            if (c < minC) minC = c;
+            if (c > maxC) maxC = c;
+            if (r < minR) minR = r;
+            if (r > maxR) maxR = r;
             if (this.prev2Grid && this.prev2Grid[idx] === 1) {
               oscillatingNow++;
             }
@@ -979,6 +1219,45 @@ export class ConwayMode {
     this.stillCount = stillNow;
     this.oscillatingCount = oscillatingNow;
     this.generation++;
+
+    // Compute bounding box dimensions & record analytics history
+    const bWidth = aliveNow > 0 ? (maxC - minC + 1) : 0;
+    const bHeight = aliveNow > 0 ? (maxR - minR + 1) : 0;
+    const bArea = bWidth * bHeight;
+
+    if (this.initialAlive === 0 && aliveNow > 0) {
+      this.initialAlive = aliveNow;
+      this.initialGen = this.generation;
+      this.initialBoundingBox = { minC, maxC, minR, maxR, width: bWidth, height: bHeight, area: bArea };
+    }
+
+    if (aliveNow > this.peakAlive) {
+      this.peakAlive = aliveNow;
+      this.peakGen = this.generation;
+    }
+    if (bArea > this.maxExpansionArea) {
+      this.maxExpansionArea = bArea;
+    }
+
+    this.history.push({
+      gen: this.generation,
+      alive: aliveNow,
+      still: stillNow,
+      osc: oscillatingNow,
+      minC: aliveNow > 0 ? minC : 0,
+      maxC: aliveNow > 0 ? maxC : 0,
+      minR: aliveNow > 0 ? minR : 0,
+      maxR: aliveNow > 0 ? maxR : 0,
+      width: bWidth,
+      height: bHeight,
+      area: bArea,
+      w: bWidth,
+      h: bHeight
+    });
+
+    if (this.history.length > 2500) {
+      this.history = this.history.filter((_, i) => i % 2 === 0 || i === this.history.length - 1);
+    }
 
     // Ambient chime if enabled
     if (this.soundEnabled && births > 0 && this.generation % 5 === 0) {

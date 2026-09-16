@@ -252,11 +252,17 @@ document.getElementById('btn-conway-step')?.addEventListener('click', () => {
 document.getElementById('btn-conway-random')?.addEventListener('click', () => {
   conwayEngine.randomize();
   updateCounter();
+  if (typeof updateAnalyticsModal === 'function' && analyticsModalOpen) {
+    updateAnalyticsModal(true);
+  }
 });
 
 document.getElementById('btn-conway-clear')?.addEventListener('click', () => {
   conwayEngine.clear();
   updateCounter();
+  if (typeof updateAnalyticsModal === 'function' && analyticsModalOpen) {
+    updateAnalyticsModal(true);
+  }
 });
 
 // Conway Tools: Draw, Line, Cross, Pan
@@ -529,6 +535,9 @@ document.querySelectorAll('.preset-card-item').forEach(btn => {
     conwayEngine.loadPreset(preset);
     presetMenu.classList.add('hidden');
     updateCounter();
+    if (typeof updateAnalyticsModal === 'function' && analyticsModalOpen) {
+      updateAnalyticsModal(true);
+    }
   });
 });
 
@@ -1022,6 +1031,503 @@ document.getElementById('modal-overlay').addEventListener('click', (e) => {
 // Load settings on startup
 window.addEventListener('DOMContentLoaded', loadSettings);
 
+// ═══ CONWAY REAL-TIME ANALYTICS & SCIENTIFIC MODAL ═══
+const modalAnalyticsOverlay = document.getElementById('modal-analytics-overlay');
+const btnConwayAnalytics = document.getElementById('btn-conway-analytics');
+const btnCloseAnalytics = document.getElementById('btn-close-analytics');
+const btnCloseAnalyticsFooter = document.getElementById('btn-close-analytics-footer');
+const chartCanvas = document.getElementById('analytics-chart-canvas');
+const chartTooltip = document.getElementById('chart-tooltip');
+const btnCopyReport = document.getElementById('btn-copy-report');
+const copyReportText = document.getElementById('copy-report-text');
+
+// Stat Cards elements
+const elInitialVal = document.getElementById('analytics-initial-val');
+const elInitialSub = document.getElementById('analytics-initial-sub');
+const elPeakVal = document.getElementById('analytics-peak-val');
+const elPeakSub = document.getElementById('analytics-peak-sub');
+const elAreaVal = document.getElementById('analytics-area-val');
+const elAreaSub = document.getElementById('analytics-area-sub');
+const elDiagIcon = document.getElementById('analytics-diag-icon');
+const elDiagVal = document.getElementById('analytics-diag-val');
+const elDiagSub = document.getElementById('analytics-diag-sub');
+
+// Legend live values
+const elLegendValAlive = document.getElementById('legend-val-alive');
+const elLegendValStill = document.getElementById('legend-val-still');
+const elLegendValOsc = document.getElementById('legend-val-osc');
+
+// Milestone table body
+const elTableBody = document.getElementById('analytics-table-body');
+
+let analyticsModalOpen = false;
+let chartRange = 'all'; // 'all' | 100 | 300
+let chartSeries = { alive: true, still: true, osc: true };
+let chartHoverData = null;
+let lastAnalyticsRenderGen = -1;
+
+function openAnalyticsModal() {
+  if (!modalAnalyticsOverlay) return;
+  analyticsModalOpen = true;
+  modalAnalyticsOverlay.classList.remove('hidden');
+  btnConwayAnalytics?.classList.add('active');
+  updateAnalyticsModal(true);
+}
+
+function closeAnalyticsModal() {
+  if (!modalAnalyticsOverlay) return;
+  analyticsModalOpen = false;
+  modalAnalyticsOverlay.classList.add('hidden');
+  btnConwayAnalytics?.classList.remove('active');
+  if (chartTooltip) chartTooltip.classList.add('hidden');
+  chartHoverData = null;
+}
+
+btnConwayAnalytics?.addEventListener('click', () => {
+  if (analyticsModalOpen) {
+    closeAnalyticsModal();
+  } else {
+    openAnalyticsModal();
+  }
+});
+
+btnCloseAnalytics?.addEventListener('click', closeAnalyticsModal);
+btnCloseAnalyticsFooter?.addEventListener('click', closeAnalyticsModal);
+
+modalAnalyticsOverlay?.addEventListener('click', (e) => {
+  if (e.target === modalAnalyticsOverlay) {
+    closeAnalyticsModal();
+  }
+});
+
+// Clicking HUD badge in Conway mode also opens analytics modal
+document.getElementById('hud-stats-badge')?.addEventListener('click', () => {
+  if (currentMode === 'conway') {
+    openAnalyticsModal();
+  }
+});
+
+// Escape key closes modals
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (analyticsModalOpen) closeAnalyticsModal();
+    if (gameSelectorMenu) {
+      gameSelectorMenu.classList.add('hidden');
+      gameSelectorWrap?.classList.remove('open');
+    }
+    if (presetMenu) presetMenu.classList.add('hidden');
+    if (modalOverlay) modalOverlay.classList.add('hidden');
+  }
+});
+
+// Range selectors
+document.querySelectorAll('.range-btn[data-range]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn[data-range]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const r = btn.dataset.range;
+    chartRange = r === 'all' ? 'all' : parseInt(r, 10);
+    renderAnalyticsChart(conwayEngine.getAnalyticsReport());
+  });
+});
+
+// Legend series toggle
+document.querySelectorAll('.chart-legend-pill[data-series]').forEach(pill => {
+  pill.addEventListener('click', () => {
+    const s = pill.dataset.series;
+    if (s && chartSeries.hasOwnProperty(s)) {
+      const nextState = !chartSeries[s];
+      // Prevent disabling all 3
+      const willHaveActive = Object.keys(chartSeries).some(k => k === s ? nextState : chartSeries[k]);
+      if (!willHaveActive) return;
+      chartSeries[s] = nextState;
+      pill.classList.toggle('active', chartSeries[s]);
+      renderAnalyticsChart(conwayEngine.getAnalyticsReport());
+    }
+  });
+});
+
+// Update modal content
+function updateAnalyticsModal(force = false) {
+  if (!analyticsModalOpen || currentMode !== 'conway') return;
+  const report = conwayEngine.getAnalyticsReport();
+  if (!report) return;
+
+  if (!force && report.currentGen === lastAnalyticsRenderGen && !chartHoverData) {
+    return;
+  }
+  lastAnalyticsRenderGen = report.currentGen;
+
+  // 1. Update stat cards
+  if (elInitialVal) elInitialVal.textContent = report.initialAlive.toLocaleString();
+  if (elInitialSub) elInitialSub.textContent = `Generación ${report.initialGen}`;
+  if (elPeakVal) elPeakVal.textContent = report.peakAlive.toLocaleString();
+  if (elPeakSub) elPeakSub.textContent = `Récord: Gen ${report.peakGen}`;
+  if (elAreaVal) elAreaVal.textContent = `${report.currentBoundingBox.w}×${report.currentBoundingBox.h}`;
+  if (elAreaSub) elAreaSub.textContent = `${report.currentBoundingBox.area.toLocaleString()} c² (Máx: ${report.maxExpansionArea.toLocaleString()})`;
+  if (elDiagIcon) elDiagIcon.textContent = report.diagnosis.icon;
+  if (elDiagVal) elDiagVal.textContent = report.diagnosis.title;
+  if (elDiagSub) elDiagSub.textContent = report.diagnosis.detail;
+
+  // 2. Update legend counts
+  if (elLegendValAlive) elLegendValAlive.textContent = report.currentAlive.toLocaleString();
+  if (elLegendValStill) elLegendValStill.textContent = report.currentStill.toLocaleString();
+  if (elLegendValOsc) elLegendValOsc.textContent = report.currentOsc.toLocaleString();
+
+  // 3. Update milestone table
+  if (elTableBody) {
+    if (!report.milestones || report.milestones.length === 0) {
+      elTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; opacity:0.6; padding:18px;">Sin generaciones aún. Pulsa Iniciar para registrar la evolución.</td></tr>`;
+    } else {
+      elTableBody.innerHTML = report.milestones.map(m => {
+        const stillPct = m.alive > 0 ? Math.round((m.still / m.alive) * 100) : 0;
+        const oscPct = m.alive > 0 ? Math.round((m.osc / m.alive) * 100) : 0;
+        return `
+          <tr>
+            <td><span class="table-milestone-badge">${m.label}</span></td>
+            <td><strong>Gen ${m.gen}</strong></td>
+            <td style="color:#10b981; font-weight:700;">${m.alive.toLocaleString()}</td>
+            <td style="color:#06b6d4;">${m.still.toLocaleString()} <span style="opacity:0.75; font-size:11px;">(${stillPct}%)</span></td>
+            <td style="color:#a855f7;">${m.osc.toLocaleString()} <span style="opacity:0.75; font-size:11px;">(${oscPct}%)</span></td>
+            <td style="font-family:monospace; font-size:12px;">${m.w}×${m.h} <span style="opacity:0.6; font-size:11px;">(${m.area} c²)</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  // 4. Render Chart
+  renderAnalyticsChart(report);
+}
+
+// Chart Rendering Engine (Pure Canvas 2D)
+function renderAnalyticsChart(report) {
+  if (!chartCanvas || !analyticsModalOpen) return;
+  const container = chartCanvas.parentElement;
+  if (!container) return;
+
+  const w = container.clientWidth || 500;
+  const h = 240;
+  const dpr = window.devicePixelRatio || 1;
+
+  if (chartCanvas.width !== Math.round(w * dpr) || chartCanvas.height !== Math.round(h * dpr)) {
+    chartCanvas.width = Math.round(w * dpr);
+    chartCanvas.height = Math.round(h * dpr);
+  }
+
+  const c = chartCanvas.getContext('2d');
+  c.resetTransform();
+  c.scale(dpr, dpr);
+  c.clearRect(0, 0, w, h);
+
+  const rawHistory = report.history || [];
+  let data = rawHistory;
+  if (typeof chartRange === 'number' && rawHistory.length > chartRange) {
+    data = rawHistory.slice(-chartRange);
+  }
+
+  // Padding
+  const padLeft = 45;
+  const padRight = 18;
+  const padTop = 20;
+  const padBottom = 28;
+  const plotW = Math.max(10, w - padLeft - padRight);
+  const plotH = Math.max(10, h - padTop - padBottom);
+
+  if (data.length === 0) {
+    c.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    c.font = '500 13px system-ui, -apple-system, sans-serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText('Esperando generaciones... Pulsa Iniciar o Paso a Paso.', w / 2, h / 2);
+    return;
+  }
+
+  // Compute max value among active series
+  let maxVal = 10;
+  for (let i = 0; i < data.length; i++) {
+    const d = data[i];
+    if (chartSeries.alive && d.alive > maxVal) maxVal = d.alive;
+    if (chartSeries.still && d.still > maxVal) maxVal = d.still;
+    if (chartSeries.osc && d.osc > maxVal) maxVal = d.osc;
+  }
+  maxVal = Math.ceil(maxVal * 1.15); // Add 15% headroom
+
+  const minGen = data[0].gen;
+  const maxGen = data[data.length - 1].gen;
+  const genSpan = Math.max(1, maxGen - minGen);
+
+  const getX = (gen) => padLeft + ((gen - minGen) / genSpan) * plotW;
+  const getY = (val) => padTop + plotH - (val / maxVal) * plotH;
+
+  // Draw Horizontal Grid Lines
+  c.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+  c.lineWidth = 1;
+  c.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  c.font = '10px system-ui, sans-serif';
+  c.textAlign = 'right';
+  c.textBaseline = 'middle';
+
+  const gridSteps = 4;
+  for (let i = 0; i <= gridSteps; i++) {
+    const val = Math.round((maxVal / gridSteps) * i);
+    const gy = getY(val);
+    c.beginPath();
+    c.moveTo(padLeft, gy);
+    c.lineTo(padLeft + plotW, gy);
+    c.stroke();
+    c.fillText(val.toString(), padLeft - 6, gy);
+  }
+
+  // Draw Generation Labels at Bottom
+  c.textAlign = 'center';
+  c.textBaseline = 'top';
+  c.fillText(`Gen ${minGen}`, padLeft, padTop + plotH + 8);
+  if (data.length > 1) {
+    c.fillText(`Gen ${maxGen}`, padLeft + plotW, padTop + plotH + 8);
+    if (genSpan > 10) {
+      const midGen = Math.round((minGen + maxGen) / 2);
+      c.fillText(`Gen ${midGen}`, getX(midGen), padTop + plotH + 8);
+    }
+  }
+
+  // Helper to draw a series line & gradient area
+  const drawSeries = (key, strokeColor, glowColor, fillColorStart) => {
+    if (!chartSeries[key] || data.length === 0) return;
+
+    // Gradient fill area
+    if (fillColorStart) {
+      const grad = c.createLinearGradient(0, padTop, 0, padTop + plotH);
+      grad.addColorStop(0, fillColorStart);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      c.beginPath();
+      c.moveTo(getX(data[0].gen), padTop + plotH);
+      for (let i = 0; i < data.length; i++) {
+        c.lineTo(getX(data[i].gen), getY(data[i][key]));
+      }
+      c.lineTo(getX(data[data.length - 1].gen), padTop + plotH);
+      c.closePath();
+      c.fillStyle = grad;
+      c.fill();
+    }
+
+    // Line stroke with subtle glow
+    c.save();
+    c.shadowColor = glowColor;
+    c.shadowBlur = 6;
+    c.strokeStyle = strokeColor;
+    c.lineWidth = 2.2;
+    c.lineJoin = 'round';
+    c.lineCap = 'round';
+    c.beginPath();
+    for (let i = 0; i < data.length; i++) {
+      const px = getX(data[i].gen);
+      const py = getY(data[i][key]);
+      if (i === 0) c.moveTo(px, py);
+      else c.lineTo(px, py);
+    }
+    c.stroke();
+    c.restore();
+
+    // If few points (<= 30), draw subtle dots
+    if (data.length <= 30) {
+      c.fillStyle = strokeColor;
+      for (let i = 0; i < data.length; i++) {
+        const px = getX(data[i].gen);
+        const py = getY(data[i][key]);
+        c.beginPath();
+        c.arc(px, py, 3, 0, Math.PI * 2);
+        c.fill();
+      }
+    }
+  };
+
+  // Draw 3 series in order: osc, still, alive
+  drawSeries('osc', '#a855f7', 'rgba(168, 85, 247, 0.6)', 'rgba(168, 85, 247, 0.12)');
+  drawSeries('still', '#06b6d4', 'rgba(6, 182, 212, 0.6)', 'rgba(6, 182, 212, 0.12)');
+  drawSeries('alive', '#10b981', 'rgba(16, 185, 129, 0.7)', 'rgba(16, 185, 129, 0.22)');
+
+  // Draw Hover / Touch Scrubber Crosshair
+  if (chartHoverData) {
+    const hx = getX(chartHoverData.gen);
+    if (hx >= padLeft && hx <= padLeft + plotW) {
+      c.save();
+      c.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      c.lineWidth = 1.2;
+      c.setLineDash([4, 4]);
+      c.beginPath();
+      c.moveTo(hx, padTop);
+      c.lineTo(hx, padTop + plotH);
+      c.stroke();
+      c.restore();
+
+      // Draw dot markers at crosshair
+      const drawMarker = (key, color) => {
+        if (!chartSeries[key]) return;
+        const my = getY(chartHoverData[key]);
+        c.fillStyle = '#ffffff';
+        c.strokeStyle = color;
+        c.lineWidth = 2.5;
+        c.beginPath();
+        c.arc(hx, my, 4.5, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+      };
+
+      drawMarker('osc', '#a855f7');
+      drawMarker('still', '#06b6d4');
+      drawMarker('alive', '#10b981');
+    }
+  }
+}
+
+// Hover / Touch interaction for crosshair tooltip
+function handleChartPointer(e) {
+  if (!chartCanvas || !analyticsModalOpen) return;
+  const report = conwayEngine.getAnalyticsReport();
+  const rawHistory = report.history || [];
+  if (rawHistory.length === 0) return;
+
+  let data = rawHistory;
+  if (typeof chartRange === 'number' && rawHistory.length > chartRange) {
+    data = rawHistory.slice(-chartRange);
+  }
+  if (data.length === 0) return;
+
+  const rect = chartCanvas.getBoundingClientRect();
+  const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : null);
+  const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+  if (clientX === null || clientY === null) return;
+
+  const mouseX = clientX - rect.left;
+  const mouseY = clientY - rect.top;
+
+  const padLeft = 45;
+  const padRight = 18;
+  const plotW = Math.max(10, rect.width - padLeft - padRight);
+
+  const clampedX = Math.max(padLeft, Math.min(padLeft + plotW, mouseX));
+  const ratio = (clampedX - padLeft) / plotW;
+
+  const minGen = data[0].gen;
+  const maxGen = data[data.length - 1].gen;
+  const targetGen = minGen + ratio * (maxGen - minGen);
+
+  let closest = data[0];
+  let minDiff = Math.abs(data[0].gen - targetGen);
+  for (let i = 1; i < data.length; i++) {
+    const diff = Math.abs(data[i].gen - targetGen);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = data[i];
+    }
+  }
+
+  chartHoverData = closest;
+  renderAnalyticsChart(report);
+
+  // Position tooltip
+  if (chartTooltip) {
+    chartTooltip.classList.remove('hidden');
+    const stillPct = closest.alive > 0 ? Math.round((closest.still / closest.alive) * 100) : 0;
+    const oscPct = closest.alive > 0 ? Math.round((closest.osc / closest.alive) * 100) : 0;
+
+    chartTooltip.innerHTML = `
+      <div class="tip-gen">Generación ${closest.gen}</div>
+      <div class="tip-row tip-alive"><span>Vivas:</span><strong>${closest.alive.toLocaleString()}</strong></div>
+      <div class="tip-row tip-still"><span>Estáticas:</span><strong>${closest.still.toLocaleString()} (${stillPct}%)</strong></div>
+      <div class="tip-row tip-osc"><span>Oscilantes:</span><strong>${closest.osc.toLocaleString()} (${oscPct}%)</strong></div>
+      <div class="tip-sub">📐 Expansión: ${closest.w}×${closest.h} (${closest.area.toLocaleString()} c²)</div>
+    `;
+
+    const tipWidth = chartTooltip.offsetWidth || 160;
+    const tipHeight = chartTooltip.offsetHeight || 100;
+    let leftPos = mouseX + 12;
+    if (leftPos + tipWidth > rect.width - 10) {
+      leftPos = mouseX - tipWidth - 12;
+    }
+    let topPos = Math.max(8, Math.min(rect.height - tipHeight - 8, mouseY - 40));
+
+    chartTooltip.style.left = `${Math.max(10, leftPos)}px`;
+    chartTooltip.style.top = `${topPos}px`;
+  }
+}
+
+if (chartCanvas) {
+  chartCanvas.addEventListener('pointermove', handleChartPointer);
+  chartCanvas.addEventListener('pointerleave', () => {
+    chartHoverData = null;
+    if (chartTooltip) chartTooltip.classList.add('hidden');
+    renderAnalyticsChart(conwayEngine.getAnalyticsReport());
+  });
+  chartCanvas.addEventListener('touchstart', handleChartPointer, { passive: true });
+  chartCanvas.addEventListener('touchmove', handleChartPointer, { passive: true });
+  chartCanvas.addEventListener('touchend', () => {
+    chartHoverData = null;
+    if (chartTooltip) chartTooltip.classList.add('hidden');
+    renderAnalyticsChart(conwayEngine.getAnalyticsReport());
+  });
+}
+
+// Window resize updates chart if modal open
+window.addEventListener('resize', () => {
+  if (analyticsModalOpen) {
+    renderAnalyticsChart(conwayEngine.getAnalyticsReport());
+  }
+});
+
+// Copy scientific summary report to clipboard
+btnCopyReport?.addEventListener('click', async () => {
+  const report = conwayEngine.getAnalyticsReport();
+  if (!report) return;
+
+  const milestoneLines = (report.milestones || []).map(m => {
+    const sPct = m.alive > 0 ? Math.round((m.still / m.alive) * 100) : 0;
+    const oPct = m.alive > 0 ? Math.round((m.osc / m.alive) * 100) : 0;
+    return `  • [${m.label.toUpperCase()}] Gen ${m.gen}: ${m.alive} vivas (${m.still} est [${sPct}%], ${m.osc} osc [${oPct}%]) | Expansión: ${m.w}x${m.h} (${m.area} c²)`;
+  }).join('\n');
+
+  const text = [
+    '=====================================================',
+    '      ZEN APP - INFORME CIENTÍFICO Y DIDÁCTICO       ',
+    '             JUEGO DE LA VIDA DE CONWAY              ',
+    '=====================================================',
+    `Fecha de análisis: ${new Date().toLocaleString()}`,
+    `Generación actual evaluada: Gen ${report.currentGen}`,
+    '',
+    '─── POBLACIÓN Y EVOLUCIÓN ───',
+    `• Células iniciales: ${report.initialAlive} vivas (Gen ${report.initialGen})`,
+    `• Récord poblacional: ${report.peakAlive} vivas (Gen ${report.peakGen})`,
+    `• Población actual: ${report.currentAlive} vivas`,
+    `  ↳ Estáticas: ${report.currentStill} (${report.currentAlive > 0 ? Math.round((report.currentStill / report.currentAlive) * 100) : 0}%)`,
+    `  ↳ Oscilantes: ${report.currentOsc} (${report.currentAlive > 0 ? Math.round((report.currentOsc / report.currentAlive) * 100) : 0}%)`,
+    '',
+    '─── DISPERSIÓN ESPACIAL Y NAVEGACIÓN ───',
+    `• Marco delimitador actual: ${report.currentBoundingBox.w} x ${report.currentBoundingBox.h} (${report.currentBoundingBox.area} celdas²)`,
+    `• Área de expansión máxima: ${report.maxExpansionArea} celdas²`,
+    `• Diagnóstico de expansión: ${report.diagnosis.icon} ${report.diagnosis.title}`,
+    `  ↳ Detalle: ${report.diagnosis.detail}`,
+    '',
+    '─── HITOS HISTÓRICOS ───',
+    milestoneLines || '  • Sin generaciones previas registradas.',
+    '====================================================='
+  ].join('\n');
+
+  try {
+    await navigator.clipboard.writeText(text);
+    if (copyReportText) {
+      const orig = copyReportText.textContent;
+      copyReportText.textContent = '✓ ¡Informe Copiado!';
+      setTimeout(() => {
+        if (copyReportText) copyReportText.textContent = orig;
+      }, 2500);
+    }
+  } catch (err) {
+    console.error('Error al copiar reporte', err);
+  }
+});
+
 // ═══ GAME LOOP ═══
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1032,6 +1538,9 @@ function gameLoop() {
   } else {
     conwayEngine.update();
     conwayEngine.draw();
+    if (analyticsModalOpen) {
+      updateAnalyticsModal();
+    }
   }
 
   updateCounter();
@@ -1039,3 +1548,4 @@ function gameLoop() {
 }
 
 requestAnimationFrame(gameLoop);
+

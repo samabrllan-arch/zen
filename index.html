@@ -234,6 +234,15 @@
           <span>Sopa</span>
         </button>
 
+        <button id="btn-conway-analytics" class="conway-btn" title="Gráfica didáctica y reporte científico del autómata">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span>Gráfica</span>
+        </button>
+
         <button id="btn-conway-clear" class="conway-btn conway-btn-danger" title="Limpiar universo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 7h16" />
@@ -640,6 +649,145 @@
 
         </div> <!-- end modal-body -->
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ CONWAY ANALYTICS & SCIENTIFIC REPORT MODAL ═══ -->
+  <div id="modal-analytics-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="analytics-modal-title">
+    <div class="modal-content modal-card-lg">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="analytics-modal-title">Análisis Didáctico • Autómata Celular</h2>
+          <div class="modal-subtitle">Historial de generaciones, curvas de población y reporte de expansión espacial.</div>
+        </div>
+        <button id="btn-close-analytics" class="btn-ghost modal-close" title="Cerrar análisis">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body analytics-body">
+        <!-- ─── MILESTONE HIGHLIGHT CARDS ─── -->
+        <div class="analytics-cards-grid">
+          <!-- Card 1: Células Iniciales -->
+          <div class="analytics-card">
+            <div class="analytics-card-header">
+              <span class="analytics-card-icon">🌱</span>
+              <span class="analytics-card-label">Semilla Inicial</span>
+            </div>
+            <div class="analytics-card-val" id="analytics-initial-val">0</div>
+            <div class="analytics-card-sub" id="analytics-initial-sub">Gen 0</div>
+          </div>
+
+          <!-- Card 2: Récord Pico -->
+          <div class="analytics-card">
+            <div class="analytics-card-header">
+              <span class="analytics-card-icon">🏆</span>
+              <span class="analytics-card-label">Pico Máximo</span>
+            </div>
+            <div class="analytics-card-val" id="analytics-peak-val">0</div>
+            <div class="analytics-card-sub" id="analytics-peak-sub">Récord: Gen 0</div>
+          </div>
+
+          <!-- Card 3: Expansión Espacial -->
+          <div class="analytics-card">
+            <div class="analytics-card-header">
+              <span class="analytics-card-icon">📐</span>
+              <span class="analytics-card-label">Área de Expansión</span>
+            </div>
+            <div class="analytics-card-val" id="analytics-area-val">0×0</div>
+            <div class="analytics-card-sub" id="analytics-area-sub">0 celdas²</div>
+          </div>
+
+          <!-- Card 4: Diagnóstico de Naves / Infinito -->
+          <div class="analytics-card analytics-card-highlight">
+            <div class="analytics-card-header">
+              <span class="analytics-card-icon" id="analytics-diag-icon">🚀</span>
+              <span class="analytics-card-label">Diagnóstico de Naves</span>
+            </div>
+            <div class="analytics-card-val" id="analytics-diag-val">Iniciando</div>
+            <div class="analytics-card-sub" id="analytics-diag-sub">Observando autómata</div>
+          </div>
+        </div>
+
+        <!-- ─── INTERACTIVE CANVAS CHART ─── -->
+        <div class="analytics-chart-wrap">
+          <div class="chart-header-bar">
+            <div class="chart-legend-group">
+              <button class="chart-legend-pill active" data-series="alive" id="legend-alive" type="button">
+                <span class="legend-dot dot-alive"></span>
+                <span>Vivas:</span>
+                <strong id="legend-val-alive">0</strong>
+              </button>
+              <button class="chart-legend-pill active" data-series="still" id="legend-still" type="button">
+                <span class="legend-dot dot-still"></span>
+                <span>Estáticas:</span>
+                <strong id="legend-val-still">0</strong>
+              </button>
+              <button class="chart-legend-pill active" data-series="osc" id="legend-osc" type="button">
+                <span class="legend-dot dot-osc"></span>
+                <span>Oscilantes:</span>
+                <strong id="legend-val-osc">0</strong>
+              </button>
+            </div>
+
+            <!-- Time Range Selector -->
+            <div class="chart-range-group">
+              <button class="range-btn active" data-range="all" type="button">Todo</button>
+              <button class="range-btn" data-range="100" type="button">Últ. 100</button>
+              <button class="range-btn" data-range="300" type="button">Últ. 300</button>
+            </div>
+          </div>
+
+          <div class="canvas-chart-container">
+            <canvas id="analytics-chart-canvas"></canvas>
+            <div id="chart-tooltip" class="chart-tooltip hidden"></div>
+          </div>
+          
+          <div class="chart-footer-note">
+            <span>Eje horizontal: Generaciones • Eje vertical: Población celular • Toca o pasa el cursor para inspeccionar</span>
+          </div>
+        </div>
+
+        <!-- ─── COMPARATIVE MILESTONE TABLE ─── -->
+        <div class="analytics-table-wrap">
+          <div class="section-title-sm">Comparativa de Hitos de Población</div>
+          <div class="table-responsive">
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>Hito</th>
+                  <th>Generación</th>
+                  <th>Total Vivas</th>
+                  <th>Estáticas (%)</th>
+                  <th>Oscilantes (%)</th>
+                  <th>Dispersión (W×H)</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-table-body">
+                <!-- Generado dinámicamente con datos reales -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Modal Action Footer -->
+        <div class="analytics-actions-footer">
+          <button id="btn-copy-report" class="btn-ghost analytics-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span id="copy-report-text">Copiar Resumen</span>
+          </button>
+          <button id="btn-close-analytics-footer" class="btn-primary analytics-btn" type="button">
+            <span>Entendido</span>
+          </button>
+        </div>
+
+      </div> <!-- end analytics-body -->
     </div>
   </div>
   
