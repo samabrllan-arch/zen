@@ -1186,10 +1186,10 @@ function updateAnalyticsModal(force = false) {
           <tr>
             <td><span class="table-milestone-badge">${m.label}</span></td>
             <td><strong>Gen ${m.gen}</strong></td>
-            <td style="color:#10b981; font-weight:700;">${m.alive.toLocaleString()}</td>
-            <td style="color:#06b6d4;">${m.still.toLocaleString()} <span style="opacity:0.75; font-size:11px;">(${stillPct}%)</span></td>
-            <td style="color:#a855f7;">${m.osc.toLocaleString()} <span style="opacity:0.75; font-size:11px;">(${oscPct}%)</span></td>
-            <td style="font-family:monospace; font-size:12px;">${m.w}×${m.h} <span style="opacity:0.6; font-size:11px;">(${m.area} c²)</span></td>
+            <td class="col-alive">${m.alive.toLocaleString()}</td>
+            <td class="col-still">${m.still.toLocaleString()} <span class="pct-tag">(${stillPct}%)</span></td>
+            <td class="col-osc">${m.osc.toLocaleString()} <span class="pct-tag">(${oscPct}%)</span></td>
+            <td class="col-area">${m.w}×${m.h}</td>
           </tr>
         `;
       }).join('');

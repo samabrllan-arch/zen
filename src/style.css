@@ -1004,23 +1004,58 @@ body {
 .analytics-table-wrap {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px 14px;
+  margin-top: 6px;
 }
 
 .section-title-sm {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-title-sm::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
 }
 
 .table-responsive {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  padding-bottom: 3px;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 .analytics-table {
@@ -1031,36 +1066,150 @@ body {
 }
 
 .analytics-table th {
-  padding: 6px 10px;
+  padding: 6px 8px;
   color: var(--text-2);
   font-weight: 600;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
 .analytics-table td {
-  padding: 7px 10px;
+  padding: 6px 8px;
   color: var(--text-1);
   font-family: 'JetBrains Mono', monospace;
+  font-size: 0.70rem;
+  font-variant-numeric: tabular-nums;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   white-space: nowrap;
+}
+
+.analytics-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .analytics-table tr:last-child td {
   border-bottom: none;
 }
 
-/* Action Footer */
-.analytics-actions-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
+.table-milestone-badge {
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-1);
 }
 
-.analytics-btn {
-  padding: 9px 16px;
+.col-alive {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.col-still {
+  color: #06b6d4;
+  font-weight: 600;
+}
+
+.col-osc {
+  color: #a855f7;
+  font-weight: 600;
+}
+
+.col-area {
+  color: var(--text-2);
+  font-size: 0.68rem;
+}
+
+.pct-tag {
+  font-size: 0.60rem;
+  opacity: 0.75;
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+/* ─── Modal Action Footer (Refined, Sleek & Non-Intrusive) ─── */
+.analytics-actions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btn-analytics-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  white-space: nowrap;
+}
+
+.btn-analytics-action svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.btn-analytics-action:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  color: var(--text-1);
+  transform: translateY(-1px);
+}
+
+.btn-analytics-action:active {
+  transform: scale(0.97);
+}
+
+.btn-analytics-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #1a0f08;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
   font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px var(--accent-glow);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  white-space: nowrap;
+}
+
+.btn-analytics-close:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 16px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.btn-analytics-close:active {
+  transform: scale(0.97);
+  filter: brightness(0.95);
 }
 
 /* Responsive adjustments for mobile */
